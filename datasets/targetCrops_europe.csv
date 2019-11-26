@@ -1,0 +1,80 @@
+crops,Name,NameFAO,Calories(kcal/t),Protein (g/t),Fat(g/t),Comments
+UAA,Utilised Agricultural Area,NA,NA,NA,NA,No crop
+ARA,Arable land,NA,NA,NA,NA,No crop
+C0000,Cereals for the production of grain (including seed),NA,NA,NA,NA,Top group
+C1000,Cereals (excluding rice) for the production of grain (including seed),NA,NA,NA,NA,Top group
+C1100,Wheat and spelt,WHEAT,NA,NA,NA,Top group
+C1110,Common wheat and spelt,WHEAT,3340000,122000,23000,
+C1111,Common winter wheat and spelt,WHEAT,NA,NA,NA,Sub group
+C1112,Common spring wheat and spelt,WHEAT,NA,NA,NA,Sub group
+C1120,Durum wheat,WHEAT,3340000,122000,23000,
+C1200,Rye and winter cereal mixtures (maslin),RYE,3190000,110000,19000,
+C1210,Rye,RYE,NA,NA,NA,Sub group
+C1220,Winter cereal mixtures (maslin),NA,NA,NA,NA,Sub group
+C1300,Barley,BARLEY,3320000,110000,18000,
+C1310,Winter barley,BARLEY,NA,NA,NA,Sub group
+C1320,Spring barley,BARLEY,NA,NA,NA,Sub group
+C1400,Oats and spring cereal mixtures (mixed grain other than maslin),OATS,NA,NA,NA,Top group
+C1410,Oats,OATS,3850000,130000,75000,
+C1420,Spring cereal mixtures (mixed grain other than maslin),NA,NA,NA,NA,Unspecific
+C1500,Grain maize and corn-cob-mix,MAIZE,3560000,95000,43000,
+C1600,Triticale,TRITICALE,3270000,116000,21000,
+C1700,Sorghum,SORGHUM,3430000,101000,33000,
+C1900,"Other cereals n.e.c. (buckwheat, millet, canary seed, etc.)","BUCKWHEAT, MILLET, CANARY SEED",3526666.667,122333.3333,36666.66667,Mean
+C2000,Rice,RICE PADDY,2800000,60000,14000,
+C2100,Rice Indica,RICE PADDY,NA,NA,NA,Sub group
+C2200,Rice Japonica,RICE PADDY,NA,NA,NA,Sub group
+P0000,Dry pulses and protein crops for the production of grain (including seed and mixtures of cereals and pulses),NA,NA,NA,NA,
+P1100,Field peas,"PEAS, GREEN",310000,21000,2000,
+P1200,Broad and field beans,"BROAD BEANS,GREEN",230000,23000,1000,
+P1300,Sweet lupins,LUPINS,3900000,400000,130000,
+P9000,Other dry pulses and protein crops n.e.c.,PULSES NES,3400000,220000,20000,
+R0000,Root crops,NA,NA,NA,NA,Top group
+R1000,Potatoes (including seed potatoes),POTATOES,670000,16000,1000,
+R2000,Sugar beet (excluding seed),SUGAR BEETS,700000,13000,1000,
+R9000,Other root crops n.e.c.,"ROOTS, TUBERS NES",910000,16000,2000,
+I0000,Industrial crops,NA,NA,NA,NA,Top group
+I1100,Oilseeds,NA,NA,NA,NA,Top group
+I1110-1130,"Rape, turnip rape, sunflower seeds and soya",NA,NA,NA,NA,Top group
+I1110,Rape and turnip rape seeds,RAPESEED,4940000,196000,450000,
+I1111,Winter rape and turnip rape seeds,RAPESEED,NA,NA,NA,Sub group
+I1112,Spring rape and turnip rape seeds,RAPESEED,NA,NA,NA,Sub group
+I1120,Sunflower seed,SUNFLOWER SEED,3080000,123000,268000,
+I1130,Soya,SOYBEANS,3350000,380000,180000,
+I1140,Linseed (oilflax),LINSEED,4980000,180000,340000,
+I1150,Cotton seed,COTTONSEED,2530000,173000,179000,
+I1190,Other oilseed crops n.e.c.,OILSEEDS NES,3870000,147000,317000,
+I2000,Fibre crops,NA,NA,NA,NA,Unspecific
+I2100,Fibre flax,NA,NA,NA,NA,No calories
+I2200,Hemp,NA,NA,NA,NA,No calories
+I2300,Cotton fibre,NA,NA,NA,NA,Avoid double counting with cottong seed
+I2900,Other fibre crops n.e.c.,NA,NA,NA,NA,Unspecific
+I3000,Tobacco,NA,NA,NA,NA,No calories
+I4000,Hops,NA,NA,NA,NA,No calories
+I5000,"Aromatic, medicinal and culinary plants",NA,NA,NA,NA,Unspecific
+I6000,Energy crops n.e.c.,NA,NA,NA,NA,Unspecific
+I9000,Other industrial crops n.e.c.,NA,NA,NA,NA,Unspecific
+G0000,Plants harvested green from arable land,NA,NA,NA,NA,Unspecific
+G1000,Temporary grasses and grazings,NA,NA,NA,NA,Unspecific
+G2000,Leguminous plants harvested green,NA,NA,NA,NA,Unspecific
+G2100,Lucerne,NA,NA,NA,NA,No calories
+G2900,Other leguminous plants harvested green n.e.c.,NA,NA,NA,NA,Unspecific
+G2910,Clover and mixtures,NA,NA,NA,NA,No calories
+G3000,Green maize,MAIZE,3560000,95000,43000,
+G9100,Other cereals harvested green (excluding green maize),NA,NA,NA,NA,Unspecific
+G9900,Other plants harvested green from arable land n.e.c.,NA,NA,NA,NA,Unspecific
+V0000_S0000,Fresh vegetables (including melons) and strawberries,VEGETABLES NES FRESH,220000,14000,2000,
+N0000,Flowers and ornamental plants (excluding nurseries),NA,NA,NA,NA,No crop
+E0000,Seeds and seedlings,NA,NA,NA,NA,No crop
+ARA99,Other arable land crops n.e.c.,NA,NA,NA,NA,Unspecific
+Q0000,Fallow land,NA,NA,NA,NA,No crop
+J0000,Permanent grassland,NA,NA,NA,NA,No crop
+PECR,Permanent crops,NA,NA,NA,NA,Unspecific
+F0000,"Fruits, berries and nuts (excluding citrus fruits, grapes and strawberries)",FRUIT NES FRESH,450000,5000,5000,
+T0000,Citrus fruits,CITRUS FRUIT NES,260000,5000,2000,
+W1000,Grapes,GRAPES,530000,5000,4000,
+O1000,Olives,OLIVES,1750000,13000,175000,
+H9000,Other permanent crops for human consumption n.e.c.,NA,NA,NA,NA,Unspecific
+L0000,Nurseries,NA,NA,NA,NA,No crop
+PECR9,Other permanent crops,NA,NA,NA,NA,Unspecific
+K0000,Kitchen gardens,NA,NA,NA,NA,Unspecific
