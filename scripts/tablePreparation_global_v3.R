@@ -53,12 +53,12 @@ names(dfProductionFull)
 
 ## production data
 names(dfProductionFull)
-dfProductionFull <- dfProductionFull[which(dfProductionFull$Element=="Area harvested" | dfProductionFull$Element == "Production"),c(2,4,6,15:64)]
+dfProductionFull <- dfProductionFull[which(dfProductionFull$Element=="Area harvested" | dfProductionFull$Element == "Production"),c(2,4,6,8:63)]
 head(dfProductionFull)
-names(dfProductionFull)[4:53] <- 1968:2017 # change colnames to years
+names(dfProductionFull)[4:59] <- 1961:2016 # change colnames to years
 
 ## change dataset structure
-dfProductionFullr <- dfProductionFull %>% gather(Year, Value, "1968":"2017")
+dfProductionFullr <- dfProductionFull %>% gather(Year, Value, "1961":"2016")
 head(dfProductionFullr)
 dfProductionFullr$Year <- as.numeric(dfProductionFullr$Year)
 dfProductionFullr <- dfProductionFullr %>% spread(Element, Value)
@@ -158,7 +158,7 @@ lsProductionFull <- lapply(vecCountry,function(ctry){
 
   ## iterate through crops
   lsCrops <- lapply(unique(dfCountry$Group2),function(c){
-    dfCrop <- merge(data.frame(Year=1968:2017,Area=ctry,Group2=c),dfCountry[which(dfCountry$Group2==c),1:5],all.x=T) # crate full data frame
+    dfCrop <- merge(data.frame(Year=1961:2016,Area=ctry,Group2=c),dfCountry[which(dfCountry$Group2==c),1:5],all.x=T) # crate full data frame
     # only consider crops with at least 15 data points for detrending
     if (sum(!is.na(dfCrop$Production))>=15&sum(dfCrop$Production>0,na.rm=T)>0){
       minYear <- min(dfCrop[which(dfCrop$Production>0),"Year"])
@@ -177,12 +177,12 @@ lsProductionFull <- lapply(vecCountry,function(ctry){
   dfCrops <- do.call(rbind,lsCrops)
   if (!is.null(dfCrops))
   {
-    lsWindow <- lapply(seq(1968,2008,10),function(yearStart){
+    lsWindow <- lapply(seq(1961,2009,8),function(yearStart){
     ## keep maximum number of crops if at least 5 years are covered
     # moving window 
-    lsWidth <- lapply(5:10,function(w){ # w = width of time window (>=5)
-      dfCropsR <- dfCrops[which(dfCrops$Year>=yearStart&dfCrops$Year<=(yearStart+9)),c("Year","Group2","Production")] %>% spread(Year,Production)
-      by <- 10-(w-1)
+    lsWidth <- lapply(5:8,function(w){ # w = width of time window (>=5)
+      dfCropsR <- dfCrops[which(dfCrops$Year>=yearStart&dfCrops$Year<=(yearStart+7)),c("Year","Group2","Production")] %>% spread(Year,Production)
+      by <- 8-(w-1)
       lsPos <- lapply(1:by,function(p){ # iterate through all possible windows by given width
         noCrop <- sum(apply(dfCropsR[,(1+p):(1+p+w-1)],1,function(r){sum(!is.na(r))==w}))
         data.frame(width = w, year = (yearStart+p-1), num = noCrop)
@@ -308,52 +308,52 @@ nrow(unique(dfIrrigation[,c("Area","Year")])) == nrow(dfIrrigation) # check dupl
 
 
 ###### Warfare
-dfWarfare <- read.csv("datasets/warfare_global.csv")
-names(dfWarfare)[3] <- "Area"
-
-dfWarfare <- na.omit(dfWarfare) # remove NA
-# add former divided Germany: always 0
-dfWarfare[which(dfWarfare$Area=="Germany")[1],]
-dfG <- data.frame(SCODE="GMY",CCODE = 255, Area="Germany",YEAR=1961:1990,ACTOTAL=0)
-dfWarfare <- rbind(dfWarfare,dfG)
-
-# combine north and south yemen
-dfWarfare[which(dfWarfare$Area=="Yemen")[1],]
-dfYemenN <- dfWarfare[which(dfWarfare$Area=="Yemen, North"),]
-dfYemenN$SCODE <- "YEM"
-dfYemenN$CCODE <- 679
-dfYemenN$Area <- "Yemen"
-dfYemenS <- dfWarfare[which(dfWarfare$Area=="Yemen, South"),]
-dfYemenS$SCODE <- "YEM"
-dfYemenS$CCODE <- 679
-dfYemenS$Area <- "Yemen"
-dfYemenT <- merge(dfYemenN,dfYemenS,by=c("SCODE","CCODE","Area","YEAR"),all=T)
-head(dfYemenT)
-dfYemenT$ACTOTAL <- rowSums(dfYemenT[,c("ACTOTAL.x","ACTOTAL.y")],na.rm=T)
-dfWarfare <- rbind(dfWarfare,dfYemenT[,c(1:4,7)])
-
-# harmonize country names
-sort(as.character(setdiff(dfWarfare$Area,dfCropland$Area)))
-
-levels(dfWarfare$Area) <- c(levels(dfWarfare$Area),"Iran (Islamic Republic of)","Korea, Democratic People's Republic of","Korea, Republic of",
-                            "Lao People's Democratic Republic","North Macedonia","Republic of Moldova","Burma","Russia","Syrian Arab Republic",
-                            "United Republic of Tanzania","Viet Nam")
-
-dfWarfare[which(dfWarfare$Area=="Iran"),"Area"] <-  "Iran (Islamic Republic of)"
-dfWarfare[which(dfWarfare$Area=="Korea North"),"Area"] <- "Korea, Democratic People's Republic of"
-dfWarfare[which(dfWarfare$Area=="Korea South"),"Area"] <- "Korea, Republic of"
-dfWarfare[which(dfWarfare$Area=="Laos"),"Area"] <-  "Lao People's Democratic Republic"
-dfWarfare[which(dfWarfare$Area=="Macedonia"),"Area"] <-  "North Macedonia"
-dfWarfare[which(dfWarfare$Area=="Moldova"),"Area"] <- "Republic of Moldova"
-dfWarfare[which(dfWarfare$Area=="Myanmar (Burma)"),"Area"] <-  "Burma"
-dfWarfare[which(dfWarfare$Area=="RUSRia"),"Area"] <- "Russia"
-dfWarfare[which(dfWarfare$Area=="Syria"),"Area"] <- "Syrian Arab Republic"
-dfWarfare[which(dfWarfare$Area=="Tanzania"),"Area"] <-"United Republic of Tanzania"
-dfWarfare[which(dfWarfare$Area=="Vietnam"),"Area"] <- "Viet Nam"
-sort(as.character(setdiff(dfWarfare$Area,dfCropland$Area)))
-names(dfWarfare)[4:5] <- c("Year","warfare")
-dfWarfare <- dfWarfare[,c("Area","Year","warfare")]
-hist(dfWarfare$warfare)
+# dfWarfare <- read.csv("datasets/warfare_global.csv")
+# names(dfWarfare)[3] <- "Area"
+# 
+# dfWarfare <- na.omit(dfWarfare) # remove NA
+# # add former divided Germany: always 0
+# dfWarfare[which(dfWarfare$Area=="Germany")[1],]
+# dfG <- data.frame(SCODE="GMY",CCODE = 255, Area="Germany",YEAR=1961:1990,ACTOTAL=0)
+# dfWarfare <- rbind(dfWarfare,dfG)
+# 
+# # combine north and south yemen
+# dfWarfare[which(dfWarfare$Area=="Yemen")[1],]
+# dfYemenN <- dfWarfare[which(dfWarfare$Area=="Yemen, North"),]
+# dfYemenN$SCODE <- "YEM"
+# dfYemenN$CCODE <- 679
+# dfYemenN$Area <- "Yemen"
+# dfYemenS <- dfWarfare[which(dfWarfare$Area=="Yemen, South"),]
+# dfYemenS$SCODE <- "YEM"
+# dfYemenS$CCODE <- 679
+# dfYemenS$Area <- "Yemen"
+# dfYemenT <- merge(dfYemenN,dfYemenS,by=c("SCODE","CCODE","Area","YEAR"),all=T)
+# head(dfYemenT)
+# dfYemenT$ACTOTAL <- rowSums(dfYemenT[,c("ACTOTAL.x","ACTOTAL.y")],na.rm=T)
+# dfWarfare <- rbind(dfWarfare,dfYemenT[,c(1:4,7)])
+# 
+# # harmonize country names
+# sort(as.character(setdiff(dfWarfare$Area,dfCropland$Area)))
+# 
+# levels(dfWarfare$Area) <- c(levels(dfWarfare$Area),"Iran (Islamic Republic of)","Korea, Democratic People's Republic of","Korea, Republic of",
+#                             "Lao People's Democratic Republic","North Macedonia","Republic of Moldova","Burma","Russia","Syrian Arab Republic",
+#                             "United Republic of Tanzania","Viet Nam")
+# 
+# dfWarfare[which(dfWarfare$Area=="Iran"),"Area"] <-  "Iran (Islamic Republic of)"
+# dfWarfare[which(dfWarfare$Area=="Korea North"),"Area"] <- "Korea, Democratic People's Republic of"
+# dfWarfare[which(dfWarfare$Area=="Korea South"),"Area"] <- "Korea, Republic of"
+# dfWarfare[which(dfWarfare$Area=="Laos"),"Area"] <-  "Lao People's Democratic Republic"
+# dfWarfare[which(dfWarfare$Area=="Macedonia"),"Area"] <-  "North Macedonia"
+# dfWarfare[which(dfWarfare$Area=="Moldova"),"Area"] <- "Republic of Moldova"
+# dfWarfare[which(dfWarfare$Area=="Myanmar (Burma)"),"Area"] <-  "Burma"
+# dfWarfare[which(dfWarfare$Area=="RUSRia"),"Area"] <- "Russia"
+# dfWarfare[which(dfWarfare$Area=="Syria"),"Area"] <- "Syrian Arab Republic"
+# dfWarfare[which(dfWarfare$Area=="Tanzania"),"Area"] <-"United Republic of Tanzania"
+# dfWarfare[which(dfWarfare$Area=="Vietnam"),"Area"] <- "Viet Nam"
+# sort(as.character(setdiff(dfWarfare$Area,dfCropland$Area)))
+# names(dfWarfare)[4:5] <- c("Year","warfare")
+# dfWarfare <- dfWarfare[,c("Area","Year","warfare")]
+# hist(dfWarfare$warfare)
 
 
 ###### climate
@@ -370,49 +370,54 @@ head(dfClimateID)
 load("datasetsDerived/climate_global.RData")
 names(dfClimateFinalPrint)
 head(dfClimateFinalPrint)
-dfClimateFinal <- dfClimateFinalPrint[,c(1,16:121)]
+dfClimateFinal <- dfClimateFinalPrint
 
 # merge
 dfClimateFinalArea <- merge(dfClimateID,dfClimateFinal,by="cellID")
 head(dfClimateFinalArea)
 length(unique(dfClimateFinalArea$cellID)) / nrow(dfClimateFinalArea)
+names(dfClimateFinalArea)
 # get cropland by region
-dfCroplandTot <- aggregate(cbind(cropland1970AD,cropland1980AD,cropland1990AD,cropland2000AD,cropland2010AD)~Area,dfClimateFinalArea,sum)
+dfCroplandTot <- aggregate(cbind(cropland1960AD,cropland1970AD,cropland1980AD,cropland1990AD,cropland2000AD,cropland2010AD)~Area,dfClimateFinalArea,sum)
 head(dfCroplandTot)
-names(dfCroplandTot)[2:6] <- paste0(names(dfCroplandTot)[2:6],"Tot")
+names(dfCroplandTot)[2:7] <- paste0(names(dfCroplandTot)[2:7],"Tot")
 dfClimateFinalArea <- merge(dfClimateFinalArea,dfCroplandTot,by="Area")
 head(dfClimateFinalArea)
 names(dfClimateFinalArea)
 ## weighted average: get area of cropland attributed to a cell segment (i.e. cropland area multiplied by area share of the segment), divide it by total cropland area across region
-dfClimateFinalArea$weight1 <- (((dfClimateFinalArea$areaHA/dfClimateFinalArea$areaTot)*dfClimateFinalArea$cropland1970AD)/dfClimateFinalArea$cropland1970ADTot)
-dfClimateFinalArea$weight2 <- (((dfClimateFinalArea$areaHA/dfClimateFinalArea$areaTot)*dfClimateFinalArea$cropland1980AD)/dfClimateFinalArea$cropland1980ADTot)
-dfClimateFinalArea$weight3 <- (((dfClimateFinalArea$areaHA/dfClimateFinalArea$areaTot)*dfClimateFinalArea$cropland1990AD)/dfClimateFinalArea$cropland1990ADTot)
-dfClimateFinalArea$weight4 <- (((dfClimateFinalArea$areaHA/dfClimateFinalArea$areaTot)*dfClimateFinalArea$cropland2000AD)/dfClimateFinalArea$cropland2000ADTot)
-dfClimateFinalArea$weight5 <- (((dfClimateFinalArea$areaHA/dfClimateFinalArea$areaTot)*dfClimateFinalArea$cropland2010AD)/dfClimateFinalArea$cropland2010ADTot)
+dfClimateFinalArea$weight1 <- (((dfClimateFinalArea$areaHA/dfClimateFinalArea$areaTot)*dfClimateFinalArea$cropland1960AD)/dfClimateFinalArea$cropland1960ADTot)
+dfClimateFinalArea$weight2 <- (((dfClimateFinalArea$areaHA/dfClimateFinalArea$areaTot)*dfClimateFinalArea$cropland1970AD)/dfClimateFinalArea$cropland1970ADTot)
+dfClimateFinalArea$weight3 <- (((dfClimateFinalArea$areaHA/dfClimateFinalArea$areaTot)*dfClimateFinalArea$cropland1980AD)/dfClimateFinalArea$cropland1980ADTot)
+dfClimateFinalArea$weight4 <- (((dfClimateFinalArea$areaHA/dfClimateFinalArea$areaTot)*dfClimateFinalArea$cropland1990AD)/dfClimateFinalArea$cropland1990ADTot)
+dfClimateFinalArea$weight5 <- (((dfClimateFinalArea$areaHA/dfClimateFinalArea$areaTot)*dfClimateFinalArea$cropland1990AD)/dfClimateFinalArea$cropland1990ADTot)
+dfClimateFinalArea$weight6 <- (((dfClimateFinalArea$areaHA/dfClimateFinalArea$areaTot)*dfClimateFinalArea$cropland2000AD)/dfClimateFinalArea$cropland2000ADTot)
+dfClimateFinalArea$weight7 <- (((dfClimateFinalArea$areaHA/dfClimateFinalArea$areaTot)*dfClimateFinalArea$cropland2010AD)/dfClimateFinalArea$cropland2010ADTot)
 hist(dfClimateFinalArea$weight5)
 
 ## multiply weight by climate values
 names(dfClimateFinalArea)
-dfClimateFinalArea[,7:26] <- dfClimateFinalArea[,7:26]*dfClimateFinalArea$weight1
-dfClimateFinalArea[,27:46] <- dfClimateFinalArea[,27:46]*dfClimateFinalArea$weight2
-dfClimateFinalArea[,47:66] <- dfClimateFinalArea[,47:66]*dfClimateFinalArea$weight3
-dfClimateFinalArea[,67:86] <- dfClimateFinalArea[,67:86]*dfClimateFinalArea$weight4
-dfClimateFinalArea[,87:106] <- dfClimateFinalArea[,87:106]*dfClimateFinalArea$weight5
+dfClimateFinalArea[,7:22] <- dfClimateFinalArea[,7:22]*dfClimateFinalArea$weight1
+dfClimateFinalArea[,23:38] <- dfClimateFinalArea[,23:38]*dfClimateFinalArea$weight2
+dfClimateFinalArea[,39:54] <- dfClimateFinalArea[,39:54]*dfClimateFinalArea$weight3
+dfClimateFinalArea[,55:70] <- dfClimateFinalArea[,55:70]*dfClimateFinalArea$weight4
+dfClimateFinalArea[,71:86] <- dfClimateFinalArea[,71:86]*dfClimateFinalArea$weight5
+dfClimateFinalArea[,87:102] <- dfClimateFinalArea[,87:102]*dfClimateFinalArea$weight6
+dfClimateFinalArea[,103:118] <- dfClimateFinalArea[,103:118]*dfClimateFinalArea$weight7
 
 # sum weighted values to get overall weighted average
 names(dfClimateFinalArea)
-dfClimateFinalAreaAgg <- aggregate(dfClimateFinalArea[,7:106],by=list(dfClimateFinalArea$Area),FUN=function(i){sum(i,na.rm=T)})
+dfClimateFinalAreaAgg <- aggregate(dfClimateFinalArea[,7:118],by=list(dfClimateFinalArea$Area),FUN=function(i){sum(i,na.rm=T)})
 head(dfClimateFinalAreaAgg)
 names(dfClimateFinalAreaAgg)[1] <- "Area"
-min(dfClimateFinalAreaAgg[2:101]) # check for negative values -> would be problematic for instability calculation
-sum(dfClimateFinalAreaAgg[2:101]<0) 
-dfClimateFinalAreaAgg$neg <- apply(dfClimateFinalAreaAgg[,2:101],1,function(r){sum(r<0)})
-dfClimateFinalAreaAgg <- dfClimateFinalAreaAgg[which(dfClimateFinalAreaAgg$neg==0),1:101]
+min(dfClimateFinalAreaAgg[2:113]) # check for negative values -> would be problematic for instability calculation
+sum(dfClimateFinalAreaAgg[2:113]<0) 
+# dfClimateFinalAreaAgg$neg <- apply(dfClimateFinalAreaAgg[,2:113],1,function(r){sum(r<0)})
+# dfClimateFinalAreaAgg <- dfClimateFinalAreaAgg[which(dfClimateFinalAreaAgg$neg==0),1:113]
 
 
 # change structure
 names(dfClimateFinalAreaAgg)
-dfClimateFinalr <- dfClimateFinalAreaAgg %>% gather(climYear, Value, names(dfClimateFinalAreaAgg)[2:101])
+dfClimateFinalr <- dfClimateFinalAreaAgg %>% gather(climYear, Value, names(dfClimateFinalAreaAgg)[2:113])
 head(dfClimateFinalr)
 dfClimateFinalr$Year <- as.numeric(substr(dfClimateFinalr$climYear,9,12))
 dfClimateFinalr$Element <- substr(dfClimateFinalr$climYear,1,8)
@@ -426,8 +431,12 @@ nrow(unique(dfClimateFinalr[,c("Area","Year")])) == nrow(dfClimateFinalr) # chec
 
 #### calculate all variables for the 5 time periods
 
-vecCountryFinal <- Reduce(intersect,list(dfYieldCalories$Area,dfProductionCaloriesFinal$Area,dfProductionFull_Final$Area,dfShannon$Area,dfCropland$Area,dfFertilizer$Area,dfIrrigation$Area,dfClimateFinalr$Area,dfWarfare$Area))
+# vecCountryFinal <- Reduce(intersect,list(dfYieldCalories$Area,dfProductionCaloriesFinal$Area,dfProductionFull_Final$Area,dfShannon$Area,dfCropland$Area,dfFertilizer$Area,dfIrrigation$Area,dfClimateFinalr$Area,dfWarfare$Area))
+vecCountryFinal <- Reduce(intersect,list(dfYieldCalories$Area,dfProductionCaloriesFinal$Area,dfProductionFull_Final$Area,dfShannon$Area,dfCropland$Area,dfFertilizer$Area,dfIrrigation$Area,dfClimateFinalr$Area))
 
+# remove countries listed by Renard & Tilman 2019
+vecCountryFinal <- vecCountryFinal[-which(vecCountryFinal%in%c("Korea, Democratic People's Republic of", "Guinea", "Kenya","Mozambique",
+                                               "Zambia","Ireland","New Zealand","Netherlands"))] # note that Ireland was not included anyway
 
 # calculate global detrended production & Yield
 head(dfYieldCalories)
@@ -465,22 +474,22 @@ lsAll <- lapply(vecCountryFinal,function(ctry){
   dfClimateCtry <- dfClimateFinalr[which(dfClimateFinalr$Area==ctry),]
   reg <- unique(dfProductionFull_Final[which(dfProductionFull_Final$Area==ctry),"Region"])
   
-  lsAggregate <- lapply(c(1968,1978,1988,1998,2008),function(yearStart){
+  lsAggregate <- lapply(c(1961,1969,1977,1985,1993,2001,2009),function(yearStart){
     # print(yearStart)
     # global cv
     dfSummary <- data.frame(Area=ctry, timePeriod= yearStart)
-    dfSummary$cvG <- sd(dfProductionWorld[which(dfProductionWorld$Year>=yearStart&dfProductionWorld$Year<=(yearStart+9)),"ProductionDet"],na.rm=T)/mean(dfProductionWorld[which(dfProductionWorld$Year>=yearStart&dfProductionWorld$Year<=(yearStart+9)),"Production"],na.rm=T)
-    dfSummary$cvC <- sd(dfProductionRegion[which(dfProductionRegion$Region==reg&dfProductionRegion$Year>=yearStart&dfProductionRegion$Year<=(yearStart+9)),"ProductionDet"],na.rm=T)/mean(dfProductionRegion[which(dfProductionRegion$Region==reg&dfProductionRegion$Year>=yearStart&dfProductionRegion$Year<=(yearStart+9)),"Production"],na.rm=T)
-    dfSummary$cvN <- sd(dfProductionSumCtry[which(dfProductionSumCtry$Year>=yearStart&dfProductionSumCtry$Year<=(yearStart+9)),"ProductionDet"],na.rm=T)/mean(dfProductionSumCtry[which(dfProductionSumCtry$Year>=yearStart&dfProductionSumCtry$Year<=(yearStart+9)),"Production"],na.rm=T)
+    dfSummary$cvG <- sd(dfProductionWorld[which(dfProductionWorld$Year>=yearStart&dfProductionWorld$Year<=(yearStart+7)),"ProductionDet"],na.rm=T)/mean(dfProductionWorld[which(dfProductionWorld$Year>=yearStart&dfProductionWorld$Year<=(yearStart+7)),"Production"],na.rm=T)
+    dfSummary$cvR <- sd(dfProductionRegion[which(dfProductionRegion$Region==reg&dfProductionRegion$Year>=yearStart&dfProductionRegion$Year<=(yearStart+7)),"ProductionDet"],na.rm=T)/mean(dfProductionRegion[which(dfProductionRegion$Region==reg&dfProductionRegion$Year>=yearStart&dfProductionRegion$Year<=(yearStart+7)),"Production"],na.rm=T)
+    dfSummary$cvL <- sd(dfProductionSumCtry[which(dfProductionSumCtry$Year>=yearStart&dfProductionSumCtry$Year<=(yearStart+7)),"ProductionDet"],na.rm=T)/mean(dfProductionSumCtry[which(dfProductionSumCtry$Year>=yearStart&dfProductionSumCtry$Year<=(yearStart+7)),"Production"],na.rm=T)
 
-    dfSummary$yieldG <- mean(dfProductionWorld[which(dfProductionWorld$Year>=yearStart&dfProductionWorld$Year<=(yearStart+9)),"Yield"],na.rm=T)
-    dfSummary$yieldC <- mean(dfProductionRegion[which(dfProductionRegion$Region==reg&dfProductionRegion$Year>=yearStart&dfProductionRegion$Year<=(yearStart+9)),"Yield"],na.rm=T)
-    dfSummary$yieldN <- mean(dfYieldCtry[which(dfYieldCtry$Year>=yearStart&dfYieldCtry$Year<=(yearStart+9)),"Yield"],na.rm=T)
+    dfSummary$yieldG <- mean(dfProductionWorld[which(dfProductionWorld$Year>=yearStart&dfProductionWorld$Year<=(yearStart+7)),"Yield"],na.rm=T)
+    dfSummary$yieldR <- mean(dfProductionRegion[which(dfProductionRegion$Region==reg&dfProductionRegion$Year>=yearStart&dfProductionRegion$Year<=(yearStart+7)),"Yield"],na.rm=T)
+    dfSummary$yieldL <- mean(dfYieldCtry[which(dfYieldCtry$Year>=yearStart&dfYieldCtry$Year<=(yearStart+7)),"Yield"],na.rm=T)
     
-    dfSummary$diversity <- mean(dfShannonCtry[which(dfShannonCtry$Year>=yearStart&dfShannonCtry$Year<=(yearStart+9)),"diversity"],na.rm=T)
+    dfSummary$diversity <- mean(dfShannonCtry[which(dfShannonCtry$Year>=yearStart&dfShannonCtry$Year<=(yearStart+7)),"diversity"],na.rm=T)
     
     # asynchrony (Code snippet from Mehrabi & Ramankutty 2019, supplement p. 29)
-    dfProductionCtryTime <- dfProductionCtry[which(dfProductionCtry$Year>=yearStart&dfProductionCtry$Year<=(yearStart+9)),]
+    dfProductionCtryTime <- dfProductionCtry[which(dfProductionCtry$Year>=yearStart&dfProductionCtry$Year<=(yearStart+7)),]
     noCrop <- length(unique(dfProductionCtryTime$Group2))
     dfSummary$asynchrony <- NA
     if (noCrop == 1) {  dfSummary$asynchrony <- 0}
@@ -495,12 +504,12 @@ lsAll <- lapply(vecCountryFinal,function(ctry){
       diff.async <- 1-diff.var.glob/(diff.sd.local^2) #asynchrony
       dfSummary$asynchrony <- diff.async
     }
-    dfSummary$meanCropland <- mean(dfCroplandCtry[which(dfCroplandCtry$Year>=yearStart&dfCroplandCtry$Year<=(yearStart+9)),"croplandArea"],na.rm=T)
-    dfSummary$meanNitrogen <- mean(dfFertilizerCtry[which(dfFertilizerCtry$Year>=yearStart&dfFertilizerCtry$Year<=(yearStart+9)),"Nitrogen"],na.rm=T)
-    dfSummary$meanIrrigation_share <- mean(dfIrrigationCtry[which(dfIrrigationCtry$Year>=yearStart&dfIrrigationCtry$Year<=(yearStart+9)),"Irrigation%"],na.rm=T)
-    dfSummary$instabilityTemp <- -(mean(dfClimateCtry[which(dfClimateCtry$Year>=yearStart&dfClimateCtry$Year<=(yearStart+9)),"meanTemp"],na.rm=T)/sd(dfClimateCtry[which(dfClimateCtry$Year>=yearStart&dfClimateCtry$Year<=(yearStart+9)),"meanTemp"],na.rm=T))
-    dfSummary$instabilityPrec <- -(mean(dfClimateCtry[which(dfClimateCtry$Year>=yearStart&dfClimateCtry$Year<=(yearStart+9)),"meanPrec"],na.rm=T)/sd(dfClimateCtry[which(dfClimateCtry$Year>=yearStart&dfClimateCtry$Year<=(yearStart+9)),"meanPrec"],na.rm=T))
-    dfSummary$meanWarfare <- mean(dfWarfare[which(dfWarfare$Year>=yearStart&dfWarfare$Year<=(yearStart+9)),"warfare"],na.rm=T)
+    dfSummary$meanCropland <- mean(dfCroplandCtry[which(dfCroplandCtry$Year>=yearStart&dfCroplandCtry$Year<=(yearStart+7)),"croplandArea"],na.rm=T)
+    dfSummary$meanNitrogen <- mean(dfFertilizerCtry[which(dfFertilizerCtry$Year>=yearStart&dfFertilizerCtry$Year<=(yearStart+7)),"Nitrogen"],na.rm=T)
+    dfSummary$meanIrrigation_share <- mean(dfIrrigationCtry[which(dfIrrigationCtry$Year>=yearStart&dfIrrigationCtry$Year<=(yearStart+7)),"Irrigation%"],na.rm=T)
+    dfSummary$instabilityTemp <- -(mean(dfClimateCtry[which(dfClimateCtry$Year>=yearStart&dfClimateCtry$Year<=(yearStart+7)),"meanTemp"],na.rm=T)/sd(dfClimateCtry[which(dfClimateCtry$Year>=yearStart&dfClimateCtry$Year<=(yearStart+7)),"meanTemp"],na.rm=T))
+    dfSummary$instabilityPrec <- -(mean(dfClimateCtry[which(dfClimateCtry$Year>=yearStart&dfClimateCtry$Year<=(yearStart+7)),"meanPrec"],na.rm=T)/sd(dfClimateCtry[which(dfClimateCtry$Year>=yearStart&dfClimateCtry$Year<=(yearStart+7)),"meanPrec"],na.rm=T))
+    # dfSummary$meanWarfare <- mean(dfWarfare[which(dfWarfare$Year>=yearStart&dfWarfare$Year<=(yearStart+7)),"warfare"],na.rm=T)
     
     na.omit(dfSummary)
   })
@@ -514,86 +523,52 @@ unique(dfAll$timePeriod)
 head(dfAll)
 
 # ratio CV
-dfAll$ratioStabilityC <- dfAll$cvC/dfAll$cvN
-dfAll$ratioStabilityG <- dfAll$cvG/dfAll$cvN
+dfAll$ratioStabilityG <- dfAll$cvG/dfAll$cvL
+dfAll$ratioStabilityR <- dfAll$cvR/dfAll$cvL
 
 # ratio yield
-dfAll$ratioYieldC <- dfAll$yieldN/dfAll$yieldC
-dfAll$ratioYieldG <- dfAll$yieldN/dfAll$yieldG
+dfAll$ratioYieldG <- dfAll$yieldL/dfAll$yieldG
+dfAll$ratioYieldR <- dfAll$yieldL/dfAll$yieldR
 
 
 ## calculate nitrogen per ha
 dfAll$meanNitrogen_t_ha <- dfAll$meanNitrogen/dfAll$meanCropland
 
-names(dfAll)
-dfAll <- dfAll[,c("Area","timePeriod","cvG","cvC","cvN","ratioStabilityG","ratioStabilityC","yieldG","yieldC","yieldN","ratioYieldG","ratioYieldC","asynchrony","meanNitrogen_t_ha","meanIrrigation_share","meanWarfare","instabilityTemp","instabilityPrec")]
-names(dfAll)  
+
 
 # check NA
 sum(is.na(dfAll))
 ## omit NA
 dfAll <- na.omit(dfAll)
 hist(dfAll$ratioStabilityG)
-hist(dfAll$ratioStabilityC)
+hist(dfAll$ratioStabilityR)
 hist(dfAll$ratioYieldG)
-hist(dfAll$ratioYieldC)
+hist(dfAll$ratioYieldR)
 length(unique(dfAll$Area)) ## 149 countries
 
 
-dfAll$benefitStabilityC <- "winner"
-dfAll[which(dfAll$ratioStabilityC<1),"benefitStabilityC"] <- "loser"
-table(dfAll$benefitStabilityC)
 dfAll$benefitStabilityG <- "winner"
 dfAll[which(dfAll$ratioStabilityG<1),"benefitStabilityG"] <- "loser"
 table(dfAll$benefitStabilityG)
+dfAll$benefitStabilityR <- "winner"
+dfAll[which(dfAll$ratioStabilityR<1),"benefitStabilityR"] <- "loser"
+table(dfAll$benefitStabilityR)
 
-dfAll$benefitYieldC <- "winner"
-dfAll[which(dfAll$ratioYieldC<1),"benefitYieldC"] <- "loser"
-table(dfAll$benefitYieldC)
 dfAll$benefitYieldG <- "winner"
 dfAll[which(dfAll$ratioYieldG<1),"benefitYieldG"] <- "loser"
 table(dfAll$benefitYieldG)
-
-
-
-modRaw <- lm(ratioCV~asynchrony+meanNitrogen_t_ha+meanIrrigation_share+meanWarfare+instabilityTemp+instabilityPrec+timePeriod,data=dfAll)
-summary(modRaw)
- 
-dfLogGlobal=with(dfAll,data.frame(Area,
-                                     ratioStabilityC = log(ratioStabilityC),ratioStabilityG = log(ratioStabilityG),
-                                     ratioYieldC = log(ratioYieldC),ratioYieldG = log(ratioYieldG),
-                                     asynchrony, 
-                                     irrigation=sqrt(meanIrrigation_share),
-                                     fertilizer=sqrt(meanNitrogen_t_ha),
-                                     instabilityTemp,instabilityPrec,
-                                     meanWarfare,
-                                     timePeriod
-))
-names(dfLogGlobal)
-head(dfLogGlobal)
-
-## scale predictors for standardized regression
-dfPredictorsGlobal=sapply(dfLogGlobal[,-c(1:5)],function(x)scale(x,center = T,scale=T)[,1])
-dfCenterGlobal=data.frame(Area=dfLogGlobal[,1],ratioStabilityC=dfLogGlobal[,2],ratioStabilityG=dfLogGlobal[,3],ratioYieldC=dfLogGlobal[,4],ratioYieldG=dfLogGlobal[,5],dfPredictorsGlobal)
-head(dfCenterGlobal)
-
-modStabilityC <- lm(ratioStabilityC~asynchrony+fertilizer+irrigation+meanWarfare+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterGlobal)
-summary(modStabilityC)
-modStabilityG <- lm(ratioStabilityG~asynchrony+fertilizer+irrigation+meanWarfare+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterGlobal)
-summary(modStabilityG)
-
-modYieldC <- lm(ratioYieldC~asynchrony+fertilizer+irrigation+meanWarfare+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterGlobal)
-summary(modYieldC)
-modYieldG <- lm(ratioYieldG~asynchrony+fertilizer+irrigation+meanWarfare+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterGlobal)
-summary(modYieldG)
-
-mod <- glm(benefitGroup~asynchrony+meanNitrogen_t_ha+meanIrrigation_share+meanWarfare+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterGlobal,family="binomial")
-
-
+dfAll$benefitYieldR <- "winner"
+dfAll[which(dfAll$ratioYieldR<1),"benefitYieldR"] <- "loser"
+table(dfAll$benefitYieldR)
 
 ## save dataframe
-write.csv(dfAll, "datasetsDerived/dataFinal_global_v2.csv",row.names=F)
-
+names(dfAll)
+names(dfAll)[1] <- "Country"
+dfAll <- dfAll[,c("Country","timePeriod","cvG","cvR","cvL","ratioStabilityG","ratioStabilityR","benefitStabilityG","benefitStabilityR",
+                  "yieldG","yieldR","yieldL","ratioYieldG","ratioYieldR","benefitYieldG","benefitYieldR",
+                  "asynchrony","diversity","meanNitrogen_t_ha","meanIrrigation_share",
+                  "instabilityTemp","instabilityPrec")]
+write.csv(dfAll, "datasetsDerived/dataFinal_global_v3.csv",row.names=F)
 
 
 
