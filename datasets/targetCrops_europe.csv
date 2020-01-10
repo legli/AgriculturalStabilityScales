@@ -1,4 +1,4 @@
-crops,Name,NameFAO,Calories(kcal/t),Protein (g/t),Fat(g/t),Comments,FoodGroup,GrowthLength,GrowthStructure
+crops,Name,NameFAO,calories,Protein (g/t),Fat(g/t),Comments,FoodGroup,GrowthLength,GrowthStructure
 UAA,Utilised Agricultural Area,NA,NA,NA,NA,No crop,NA,NA,NA
 ARA,Arable land,NA,NA,NA,NA,No crop,NA,NA,NA
 C0000,Cereals for the production of grain (including seed),NA,NA,NA,NA,Top group,NA,NA,NA
@@ -16,7 +16,7 @@ C1310,Winter barley,BARLEY,NA,NA,NA,Sub group,NA,NA,NA
 C1320,Spring barley,BARLEY,NA,NA,NA,Sub group,NA,NA,NA
 C1400,Oats and spring cereal mixtures (mixed grain other than maslin),OATS,NA,NA,NA,Top group,NA,NA,NA
 C1410,Oats,OATS,3850000,130000,75000,,cereals,annual,herbaceous
-C1420,Spring cereal mixtures (mixed grain other than maslin),NA,NA,NA,NA,Unspecific,NA,NA,NA
+C1420,Spring cereal mixtures (mixed grain other than maslin),"GRAIN, MIXED",3400000,NA,NA,,cereals,annual,herbaceous
 C1500,Grain maize and corn-cob-mix,MAIZE,3560000,95000,43000,,cereals,annual,herbaceous
 C1600,Triticale,TRITICALE,3270000,116000,21000,,cereals,annual,herbaceous
 C1700,Sorghum,SORGHUM,3430000,101000,33000,,cereals,annual,herbaceous
@@ -25,8 +25,8 @@ C2000,Rice,RICE PADDY,2800000,60000,14000,,cereals,annual,herbaceous
 C2100,Rice Indica,RICE PADDY,NA,NA,NA,Sub group,NA,NA,NA
 C2200,Rice Japonica,RICE PADDY,NA,NA,NA,Sub group,NA,NA,NA
 P0000,Dry pulses and protein crops for the production of grain (including seed and mixtures of cereals and pulses),NA,NA,NA,NA,,NA,NA,NA
-P1100,Field peas,"PEAS, GREEN",310000,21000,2000,,vegetables and melons,annual,herbaceous
-P1200,Broad and field beans,"BROAD BEANS,GREEN",230000,23000,1000,,vegetables and melons,annual,herbaceous
+P1100,Field peas,"PEAS, DRY",3410000,225000,18000,,vegetables and melons,annual,herbaceous
+P1200,Broad and field beans,"Broad beans, horse beans, dry",3430000,234000,20000,,pulses,annual,herbaceous
 P1300,Sweet lupins,LUPINS,3900000,400000,130000,,pulses,annual,herbaceous
 P9000,Other dry pulses and protein crops n.e.c.,PULSES NES,3400000,220000,20000,,pulses,annual,herbaceous
 R0000,Root crops,NA,NA,NA,NA,Top group,NA,NA,NA

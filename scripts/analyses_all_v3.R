@@ -144,6 +144,39 @@ modDiversityYieldEurope <- lm(ratioYieldG~diversity+fertilizer+irrigation+instab
 summary(modDiversityYieldEurope)
 
 
+####### FARMLEVEL
+
+dfFarmer <- read.csv("C:/Users/egli/Nextcloud/Cloud/PhD_Leipzig/Publications/Globalization/datasetsDerived/dataFinal_farmlevel.csv")
+
+dfLogFarmer=with(dfFarmer,data.frame(id,
+                                  ratioStabilityG = log(ratioStabilityG),
+                                  ratioYieldG = log(ratioYieldG),
+                                  asynchrony,diversity,
+                                  irrigation=sqrt(meanIrrigation),
+                                  fertilizer=sqrt(meanFertilizer_ha),
+                                  instabilityTemp,instabilityPrec,
+                                  timePeriod
+))
+names(dfLogFarmer)
+head(dfLogFarmer)
+
+## scale predictors for standardized regression
+dfPredictorsFarmer=sapply(dfLogFarmer[,-c(1:3)],function(x)scale(x,center = T,scale=T)[,1])
+dfCenterFarmer=data.frame(Area=dfLogFarmer[,1],ratioStabilityG=dfLogFarmer[,2],ratioYieldG=dfLogFarmer[,3],dfPredictorsFarmer)
+head(dfCenterFarmer)
+
+
+## regression models
+modAsynchronyStabilityFarmer <- lm(ratioStabilityG~asynchrony+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterFarmer)
+summary(modAsynchronyStabilityFarmer)
+modDiversityStabilityFarmer <- lm(ratioStabilityG~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterFarmer)
+summary(modDiversityStabilityFarmer)
+
+modAsynchronyYieldFarmer <- lm(ratioYieldG~asynchrony+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterFarmer)
+summary(modAsynchronyYieldFarmer)
+modDiversityYieldFarmer <- lm(ratioYieldG~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterFarmer)
+summary(modDiversityYieldFarmer)
+
 
 
 
