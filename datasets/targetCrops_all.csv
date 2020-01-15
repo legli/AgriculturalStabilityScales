@@ -1,0 +1,27 @@
+cropFAO,cropEurostat,codeEurostat,cropTestbetrieb,codeTestbetrieb,calories,group,period,structure,included
+Wheat,Common wheat and spelt,C1110,Sommerweizen,z4001,3340000,cereals,annual,herbaceous,True
+Wheat,Common wheat and spelt,C1110,"Winterweizen, Dinkel",z4002,3340000,cereals,annual,herbaceous,True
+Wheat,Durum wheat,C1120,"Hartweizen, Durum",z4003,3340000,cereals,annual,herbaceous,True
+Barley,Barley,C1300,Wintergerste,z4005,3320000,cereals,annual,herbaceous,True
+Barley,Barley,C1300,Sommergerste,z4006,3320000,cereals,annual,herbaceous,True
+Rapeseed,Rape and turnip rape seeds,I1110,Winterraps,z4024,4940000,oil crops,annual,herbaceous,True
+Rapeseed,Rape and turnip rape seeds,I1110,Sommerraps und Rübsen,z4025,4940000,oil crops,annual,herbaceous,True
+Rapeseed,Rape and turnip rape seeds,I1110,Energieölsaaten,z4034,4940000,oil crops,annual,herbaceous,True
+Rye,Rye and winter cereal mixtures (maslin),C1200,Roggen,z4004,3190000,cereals,annual,herbaceous,True
+Maize,Green maize,G3000,Energiemais,z4032,3560000,cereals,annual,herbaceous,True
+Maize,Grain maize and corn-cob-mix,C1500,Körnermais,z4010,3560000,cereals,annual,herbaceous,True
+Maize,Grain maize and corn-cob-mix,C1500,CCM,z4011,3560000,cereals,annual,herbaceous,True
+Triticale,Triticale,C1600,Triticale,z4012,3270000,cereals,annual,herbaceous,True
+Sugar beet,Sugar beet (excluding seed),R2000,Energierüben,z4035,700000,sugar crops,annual,herbaceous,True
+Sugar beet,Sugar beet (excluding seed),R2000,Zuckerrüben,z4040,700000,sugar crops,annual,herbaceous,True
+Potatoes,Potatoes (including seed potatoes),R1000,Kartoffeln,z4039,670000,roots and tubers,annual,herbaceous,True
+Oats,Oats,C1410,Hafer,z4007,3850000,cereals,annual,herbaceous,True
+Grapes,Grapes,W1000,NA,NA,530000,fruit,perennial,shrub,False
+Apples,"Fruits, berries and nuts (excluding citrus fruits, grapes and strawberries)",F0000,Äpfel,z4200,480000,fruit,perennial,tree,True
+"Broad beans, horse beans, dry",Broad and field beans,P1200,Ackerbohnen,z4020,3430000,pulses,annual,herbaceous,True
+Lupins,Sweet lupins,P1300,Sonstige Hülsenfrüchte für Futterzwecke,z4022,3900000,pulses,annual,herbaceous,True
+Lupins,Sweet lupins,P1300,Sonstige Hülsenfrüchte,z4023,3900000,pulses,annual,herbaceous,True
+Sunflower seed,Sunflower seed,I1120,Sonnenblumen,z4026,3080000,oil crops,annual,herbaceous,True
+Asparagus,NA,NA,NA,NA,120000,vegetables and melons,annual,herbaceous,False
+"Grain, mixed",Spring cereal mixtures (mixed grain other than maslin),C1420,Energiegetreide,z4031,3400000,cereals,annual,herbaceous,True
+"Grain, mixed","Other cereals n.e.c. (buckwheat, millet, canary seed, etc.)",C1900,Sonstiges Getreide,z4017,3400000,cereals,annual,herbaceous,True

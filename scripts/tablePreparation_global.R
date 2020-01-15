@@ -439,7 +439,7 @@ nrow(unique(dfClimateFinalr[,c("Area","Year")])) == nrow(dfClimateFinalr) # chec
 vecCountryFinal <- Reduce(intersect,list(dfYieldCalories$Area,dfProductionFull_Final$Area,dfShannon$Area,dfCropland$Area,dfFertilizer$Area,dfIrrigation$Area,dfClimateFinalr$Area))
 
 # remove countries listed by Renard & Tilman 2019
-vecCountryFinal <- vecCountryFinal[-which(vecCountryFinal%in%c("Korea, Democratic People's Republic of", "Guinea", "Kenya","Mozambique",
+vecCountryFinal <- vecCountryFinal[-which(vecCountryFinal%in%c("Egypt","Korea, Democratic People's Republic of", "Guinea", "Kenya","Mozambique",
                                                "Zambia","Ireland","New Zealand","Netherlands"))] # note that Ireland was not included anyway
 
 # calculate global detrended production & Yield
@@ -448,7 +448,7 @@ sum(is.na(dfYieldCalories))
 dfProductionWorld <- aggregate(cbind(Production,AreaHarvested)~Year,dfYieldCalories[which(dfYieldCalories$Area%in%vecCountryFinal),],sum)
 dfProductionWorld$ProductionDet <- resid(loess(Production ~ Year,data=dfProductionWorld))
 dfProductionWorld$Yield <- dfProductionWorld$Production/dfProductionWorld$AreaHarvested
-
+dfProductionWorld$YieldDet <- resid(loess(Yield ~ Year,data=dfProductionWorld))
 
 ## summarize per time frame 
 lsAll <- lapply(vecCountryFinal,function(ctry){
@@ -459,6 +459,7 @@ lsAll <- lapply(vecCountryFinal,function(ctry){
   dfProductionCtry <- dfProductionFull_Final[which(dfProductionFull_Final$Area==ctry),c("Area","Group2","Year","ProductionDet")]
   dfProductionSumCtry <- dfYieldCalories[which(dfYieldCalories$Area==ctry),]
   dfProductionSumCtry$ProductionDet <- resid(loess(Production ~ Year,data=dfProductionSumCtry))
+  dfProductionSumCtry$YieldDet <- resid(loess(Yield ~ Year,data=dfProductionSumCtry))
   # dfYieldCtry <- dfYieldCalories[which(dfYieldCalories$Area==ctry),c("Area","Year","Yield")]
   dfShannonCtry <- dfShannon[which(dfShannon$Area==ctry),]
   dfCroplandCtry <- dfCropland[which(dfCropland$Area==ctry),]
@@ -469,11 +470,14 @@ lsAll <- lapply(vecCountryFinal,function(ctry){
   
   lsAggregate <- lapply(c(1961,1969,1977,1985,1993,2001,2009),function(yearStart){
     # print(yearStart)
-    # global cv
+    # cv production
     dfSummary <- data.frame(Area=ctry, timePeriod= yearStart)
-    dfSummary$cvG <- sd(dfProductionWorld[which(dfProductionWorld$Year>=yearStart&dfProductionWorld$Year<=(yearStart+7)),"ProductionDet"],na.rm=T)/mean(dfProductionWorld[which(dfProductionWorld$Year>=yearStart&dfProductionWorld$Year<=(yearStart+7)),"Production"],na.rm=T)
-    dfSummary$cvL <- sd(dfProductionSumCtry[which(dfProductionSumCtry$Year>=yearStart&dfProductionSumCtry$Year<=(yearStart+7)),"ProductionDet"],na.rm=T)/mean(dfProductionSumCtry[which(dfProductionSumCtry$Year>=yearStart&dfProductionSumCtry$Year<=(yearStart+7)),"Production"],na.rm=T)
-
+    dfSummary$cvPG <- sd(dfProductionWorld[which(dfProductionWorld$Year>=yearStart&dfProductionWorld$Year<=(yearStart+7)),"ProductionDet"],na.rm=T)/mean(dfProductionWorld[which(dfProductionWorld$Year>=yearStart&dfProductionWorld$Year<=(yearStart+7)),"Production"],na.rm=T)
+    dfSummary$cvPL <- sd(dfProductionSumCtry[which(dfProductionSumCtry$Year>=yearStart&dfProductionSumCtry$Year<=(yearStart+7)),"ProductionDet"],na.rm=T)/mean(dfProductionSumCtry[which(dfProductionSumCtry$Year>=yearStart&dfProductionSumCtry$Year<=(yearStart+7)),"Production"],na.rm=T)
+     # cv yield
+    dfSummary$cvYG <- sd(dfProductionWorld[which(dfProductionWorld$Year>=yearStart&dfProductionWorld$Year<=(yearStart+7)),"YieldDet"],na.rm=T)/mean(dfProductionWorld[which(dfProductionWorld$Year>=yearStart&dfProductionWorld$Year<=(yearStart+7)),"Yield"],na.rm=T)
+    dfSummary$cvYL <- sd(dfProductionSumCtry[which(dfProductionSumCtry$Year>=yearStart&dfProductionSumCtry$Year<=(yearStart+7)),"YieldDet"],na.rm=T)/mean(dfProductionSumCtry[which(dfProductionSumCtry$Year>=yearStart&dfProductionSumCtry$Year<=(yearStart+7)),"Yield"],na.rm=T)
+    # mean yield
     dfSummary$yieldG <- mean(dfProductionWorld[which(dfProductionWorld$Year>=yearStart&dfProductionWorld$Year<=(yearStart+7)),"Yield"],na.rm=T)
     dfSummary$yieldL <- mean(dfProductionSumCtry[which(dfProductionSumCtry$Year>=yearStart&dfProductionSumCtry$Year<=(yearStart+7)),"Yield"],na.rm=T)
     
@@ -513,11 +517,13 @@ nrow(unique(dfAll[,c("Area","timePeriod")])) == nrow(dfAll) # check duplicates
 unique(dfAll$timePeriod)
 head(dfAll)
 
-# ratio CV
-dfAll$ratioStabilityG <- dfAll$cvG/dfAll$cvL
-
-# ratio yield
-dfAll$ratioYieldG <- dfAll$yieldL/dfAll$yieldG
+# # ratio CV
+# dfAll$ratioStabilityG <- dfAll$cvG/dfAll$cvL
+# dfAll$ratioStabilityYG <- dfAll$cvYG/dfAll$cvYL
+# 
+# 
+# # ratio yield
+# dfAll$ratioYieldG <- dfAll$yieldL/dfAll$yieldG
 
 ## calculate nitrogen per ha
 dfAll$meanNitrogen_t_ha <- dfAll$meanNitrogen/dfAll$meanCropland
@@ -528,26 +534,24 @@ dfAll$meanNitrogen_t_ha <- dfAll$meanNitrogen/dfAll$meanCropland
 sum(is.na(dfAll))
 ## omit NA
 dfAll <- na.omit(dfAll)
-hist(dfAll$ratioStabilityG)
-hist(dfAll$ratioYieldG)
-length(unique(dfAll$Area)) ## 153 countries
+length(unique(dfAll$Area)) ## 152 countries
 
-
-dfAll$benefitStabilityG <- "winner"
-dfAll[which(dfAll$ratioStabilityG<1),"benefitStabilityG"] <- "loser"
-table(dfAll$benefitStabilityG)
-
-dfAll$benefitYieldG <- "winner"
-dfAll[which(dfAll$ratioYieldG<1),"benefitYieldG"] <- "loser"
-table(dfAll$benefitYieldG)
+# 
+# dfAll$benefitStabilityG <- "winner"
+# dfAll[which(dfAll$ratioStabilityG<1),"benefitStabilityG"] <- "loser"
+# table(dfAll$benefitStabilityG)
+# 
+# dfAll$benefitYieldG <- "winner"
+# dfAll[which(dfAll$ratioYieldG<1),"benefitYieldG"] <- "loser"
+# table(dfAll$benefitYieldG)
 
 ## save dataframe
 names(dfAll)
 names(dfAll)[1] <- "Country"
 dfAll <- dfAll[,c("Country","timePeriod",
-                  "cvG","cvL","ratioStabilityG","benefitStabilityG",
-                  "yieldG","yieldL","ratioYieldG","benefitYieldG",
-                  "asynchrony","diversity","meanNitrogen_t_ha","meanIrrigation_share",
+                  "cvPG","cvPL","cvYG","cvYL",
+                  "yieldG","yieldL",
+                  ,"asynchrony","diversity","meanNitrogen_t_ha","meanIrrigation_share",
                   "instabilityTemp","instabilityPrec")]
 write.csv(dfAll, "datasetsDerived/dataFinal_global.csv",row.names=F)
 

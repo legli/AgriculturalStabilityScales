@@ -3,6 +3,8 @@ library(RColorBrewer)
 library(ggpubr)
 library(sf)
 library(rgdal)
+library(raster)
+library(plyr)
 
 ## globals
 
@@ -16,74 +18,77 @@ names(myColors) <- factor(lev,levels=lev)
 
 
 ###### National level
+### preparation
+# read df
 dfNational <- read.csv("datasetsDerived/dataFinal_global.csv")
-sum(dfNational$benefitStabilityG=="winner")/nrow(dfNational)
-sum(dfNational$benefitYieldG=="winner")/nrow(dfNational)
+
+# prepare variables
+dfNational$ratioStability <- dfNational$cvYG/dfNational$cvYL
+dfNational$ratioYield <- dfNational$yieldL/dfNational$yieldG
+
+dfNational$benefitStability <- "winner"
+dfNational[which(dfNational$ratioStability<1),"benefitStability"] <- "loser"
+table(dfNational$benefitStability)
+
+dfNational$benefitYield <- "winner"
+dfNational[which(dfNational$ratioYield<1),"benefitYield"] <- "loser"
+table(dfNational$benefitYield)
 
 
-## trade-off between yield benefit and stability benefit
-cor(dfNational$ratioStabilityG,dfNational$ratioYieldG)
-plot(dfNational$ratioStabilityG,dfNational$ratioYieldG,xlim=c(0,5),ylim=c(0,5))
-
+### regression analyses
+## transformations
 dfLogNational=with(dfNational,data.frame(Country,
-                                  ratioStabilityG = log(ratioStabilityG),
-                                  ratioYieldG = log(ratioYieldG),
-                                  asynchrony,diversity, 
+                                  ratioStability = log(ratioStability),
+                                  ratioYield = log(ratioYield),
+                                  diversity, 
                                   irrigation=sqrt(meanIrrigation_share),
                                   fertilizer=sqrt(meanNitrogen_t_ha),
+                                  warfare=sqrt(meanWarfare),
                                   instabilityTemp,instabilityPrec,
                                   timePeriod
 ))
 names(dfLogNational)
 head(dfLogNational)
 
-## scale predictors for standardized regression
+# scale predictors for standardized regression
 dfPredictorsNational=sapply(dfLogNational[,-c(1:3)],function(x)scale(x,center = T,scale=T)[,1])
-dfCenterNational=data.frame(Country=dfLogNational[,1],ratioStabilityG=dfLogNational[,2],ratioYieldG=dfLogNational[,3],dfPredictorsNational)
+dfCenterNational=data.frame(Country=dfLogNational[,1],ratioStability=dfLogNational[,2],ratioYield=dfLogNational[,3],dfPredictorsNational)
 head(dfCenterNational)
 
 ## regression models
-modAsynchronyStabilityNational <- lm(ratioStabilityG~asynchrony+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterNational)
+modAsynchronyStabilityNational <- lm(ratioStability~asynchrony+warfare+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterNational)
 summary(modAsynchronyStabilityNational)
-modDiversityStabilityNational <- lm(ratioStabilityG~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterNational)
+modDiversityStabilityNational <- lm(ratioStability~diversity+warfare+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterNational)
 summary(modDiversityStabilityNational)
 
-modAsynchronyYieldNational <- lm(ratioYieldG~asynchrony+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterNational)
+modAsynchronyYieldNational <- lm(ratioYield~asynchrony+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterNational)
 summary(modAsynchronyYieldNational)
-modDiversityYieldNational <- lm(ratioYieldG~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterNational)
+modDiversityYieldNational <- lm(ratioYield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterNational)
 summary(modDiversityYieldNational)
 
-# modStabilityG0 <- lm(ratioStabilityG~1,data=dfCenterNational)
-# 
-# modStabilityG2 <- lm(ratioStabilityG~asynchrony+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterNational)
-# 
-# modStabilityGFull <- lm(ratioStabilityG~(asynchrony+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod)^2,data=dfCenterNational)
-# 
-# modCV_reduced=stepAIC(modStabilityGFull,k=log(nrow(dfCenterNational)))
-# summary(modCV_reduced)
-# summary(modStabilityG)
-# 
-# 
-# plot(allEffects(modCV_reduced),multiline=T)
-# 
-# AIC(modStabilityG0)
-# 
-# AIC(modStabilityG2)
 
-
-
-
-######## EUROPE
+###### SUBNATIONAL LEVEL
+### preparation
 dfSubnational <- read.csv("datasetsDerived/dataFinal_europe.csv")
 dfSubnational <- merge(dfSubnational,dfNational[,c("Country","timePeriod","meanNitrogen_t_ha","meanIrrigation_share")],by=c("Country","timePeriod"))
 
-sum(dfSubnational$benefitStabilityG=="winner")/nrow(dfSubnational)
-sum(dfSubnational$benefitYieldG=="winner")/nrow(dfSubnational)
+# prepare variables
+dfSubnational$ratioStability <- dfSubnational$cvYG/dfSubnational$cvYL
+dfSubnational$ratioYield <- dfSubnational$yieldL/dfSubnational$yieldG
 
+dfSubnational$benefitStability <- "winner"
+dfSubnational[which(dfSubnational$ratioStability<1),"benefitStability"] <- "loser"
+table(dfSubnational$benefitStability)
 
+dfSubnational$benefitYield <- "winner"
+dfSubnational[which(dfSubnational$ratioYield<1),"benefitYield"] <- "loser"
+table(dfSubnational$benefitYield)
+
+### regression analyses
+## transformations
 dfLogSubnational=with(dfSubnational,data.frame(RegionCode,
-                                  ratioStabilityG = log(ratioStabilityG),
-                                  ratioYieldG = log(ratioYieldG),
+                                  ratioStability = log(cvYG),
+                                  ratioYield = log(ratioYield),
                                   asynchrony,diversity, 
                                   irrigation=sqrt(meanIrrigation_share),
                                   fertilizer=sqrt(meanNitrogen_t_ha),                                  
@@ -93,34 +98,48 @@ dfLogSubnational=with(dfSubnational,data.frame(RegionCode,
 names(dfLogSubnational)
 head(dfLogSubnational)
 
-## scale predictors for standardized regression
+# scale predictors for standardized regression
 dfPredictorsSubnational=sapply(dfLogSubnational[,-c(1:3)],function(x)scale(x,center = T,scale=T)[,1])
-dfCenterSubnational=data.frame(Area=dfLogSubnational[,1],ratioStabilityG=dfLogSubnational[,2],ratioYieldG=dfLogSubnational[,3],dfPredictorsSubnational)
+dfCenterSubnational=data.frame(Area=dfLogSubnational[,1],ratioStability=dfLogSubnational[,2],ratioYield=dfLogSubnational[,3],dfPredictorsSubnational)
 head(dfCenterSubnational)
 
-
-
-## regression models
-modAsynchronyStabilitySubnational <- lm(ratioStabilityG~asynchrony+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterSubnational)
+# regression models
+modAsynchronyStabilitySubnational <- lm(ratioStability~asynchrony+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterSubnational)
 summary(modAsynchronyStabilitySubnational)
-modDiversityStabilitySubnational <- lm(ratioStabilityG~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterSubnational)
+modDiversityStabilitySubnational <- lm(ratioStability~diversity+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterSubnational)
 summary(modDiversityStabilitySubnational)
 
-modAsynchronyYieldSubnational <- lm(ratioYieldG~asynchrony+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterSubnational)
+modAsynchronyYieldSubnational <- lm(ratioYield~asynchrony+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterSubnational)
 summary(modAsynchronyYieldSubnational)
-modDiversityYieldSubnational <- lm(ratioYieldG~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterSubnational)
+modDiversityYieldSubnational <- lm(ratioYield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterSubnational)
 summary(modDiversityYieldSubnational)
 
 
-####### FARMLEVEL
-
+####### FARM LEVEL
+### preparation
 dfFarm <- read.csv("C:/Users/egli/Nextcloud/Cloud/PhD_Leipzig/Publications/Globalization/datasetsDerived/dataFinal_farmlevel.csv")
-sum(dfFarm$benefitStabilityG=="winner")/nrow(dfFarm)
-sum(dfFarm$benefitYieldG=="winner")/nrow(dfFarm)
 
+# prepare variables
+dfFarm$ratioStability <- dfFarm$cvYG/dfFarm$cvYL
+dfFarm$ratioYield <- dfFarm$yieldL/dfFarm$yieldG
+
+# remove very high values
+# dfFarm <- dfFarm[which(dfFarm$ratioStability<100),]
+dfFarm <- dfFarm[-which(dfFarm$ratioStability%in%boxplot.stats(dfFarm$ratioStability)$out),]
+
+dfFarm$benefitStability <- "winner"
+dfFarm[which(dfFarm$ratioStability<1),"benefitStability"] <- "loser"
+table(dfFarm$benefitStability)
+
+dfFarm$benefitYield <- "winner"
+dfFarm[which(dfFarm$ratioYield<1),"benefitYield"] <- "loser"
+table(dfFarm$benefitYield)
+
+### regression analyses
+## transformations
 dfLogFarmer=with(dfFarm,data.frame(id,
-                                  ratioStabilityG = log(ratioStabilityG),
-                                  ratioYieldG = log(ratioYieldG),
+                                  ratioStability = log(cvYL),
+                                  ratioYield = log(ratioYield),
                                   asynchrony,diversity,
                                   irrigation=sqrt(meanIrrigation),
                                   fertilizer=sqrt(meanFertilizer_ha),
@@ -130,52 +149,48 @@ dfLogFarmer=with(dfFarm,data.frame(id,
 names(dfLogFarmer)
 head(dfLogFarmer)
 
-## scale predictors for standardized regression
+# scale predictors for standardized regression
 dfPredictorsFarmer=sapply(dfLogFarmer[,-c(1:3)],function(x)scale(x,center = T,scale=T)[,1])
-dfCenterFarmer=data.frame(Area=dfLogFarmer[,1],ratioStabilityG=dfLogFarmer[,2],ratioYieldG=dfLogFarmer[,3],dfPredictorsFarmer)
+dfCenterFarmer=data.frame(Area=dfLogFarmer[,1],ratioStability=dfLogFarmer[,2],ratioYield=dfLogFarmer[,3],dfPredictorsFarmer)
 head(dfCenterFarmer)
 
-
-## regression models
-modAsynchronyStabilityFarmer <- lm(ratioStabilityG~asynchrony+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterFarmer)
+# regression models
+modAsynchronyStabilityFarmer <- lm(ratioStability~asynchrony+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterFarmer)
 summary(modAsynchronyStabilityFarmer)
-modDiversityStabilityFarmer <- lm(ratioStabilityG~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterFarmer)
+modDiversityStabilityFarmer <- lm(ratioStability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterFarmer)
 summary(modDiversityStabilityFarmer)
 
-modAsynchronyYieldFarmer <- lm(ratioYieldG~asynchrony+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterFarmer)
+modAsynchronyYieldFarmer <- lm(ratioYield~asynchrony+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterFarmer)
 summary(modAsynchronyYieldFarmer)
-modDiversityYieldFarmer <- lm(ratioYieldG~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterFarmer)
+modDiversityYieldFarmer <- lm(ratioYield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterFarmer)
 summary(modDiversityYieldFarmer)
 
-plot(dfFarm$ratioStabilityG,dfFarm$ratioYieldG)
 
+###### FIGURES
 
-
-###### Figures
-
-# Fig 1. 
-
+### Fig 1. 
+## extract necessary information
 dfScaleEffectsMain <- data.frame(ratioMean=c(
-                                mean(dfNational$ratioStabilityG),
-                                mean(dfSubnational$ratioStabilityG),
-                                mean(dfFarm$ratioStabilityG),
-                                mean(dfNational$ratioYieldG),
-                                mean(dfSubnational$ratioYieldG),
-                                mean(dfFarm$ratioYieldG)),
+                                mean(dfNational$ratioStability),
+                                mean(dfSubnational$ratioStability),
+                                mean(dfFarm$ratioStability),
+                                mean(dfNational$ratioYield),
+                                mean(dfSubnational$ratioYield),
+                                mean(dfFarm$ratioYield)),
                                 ratioSD=c(
-                                sd(dfNational$ratioStabilityG)/length(dfNational$ratioStabilityG),
-                                sd(dfSubnational$ratioStabilityG)/length(dfSubnational$ratioStabilityG),
-                                sd(dfFarm$ratioStabilityG)/length(dfFarm$ratioStabilityG),
-                                sd(dfNational$ratioYieldG)/length(dfNational$ratioYieldG),
-                                sd(dfSubnational$ratioYieldG)/length(dfSubnational$ratioYieldG),
-                                sd(dfFarm$ratioYieldG)/length(dfFarm$ratioYieldG)),
+                                sd(dfNational$ratioStability)/length(dfNational$ratioStability),
+                                sd(dfSubnational$ratioStability)/length(dfSubnational$ratioStability),
+                                sd(dfFarm$ratioStability)/length(dfFarm$ratioStability),
+                                sd(dfNational$ratioYield)/length(dfNational$ratioYield),
+                                sd(dfSubnational$ratioYield)/length(dfSubnational$ratioYield),
+                                sd(dfFarm$ratioYield)/length(dfFarm$ratioYield)),
                                 propBenefit=c(
-                                sum(dfNational$benefitStabilityG=="winner")/nrow(dfNational),
-                                sum(dfSubnational$benefitStabilityG=="winner")/nrow(dfSubnational),
-                                sum(dfFarm$benefitStabilityG=="winner")/nrow(dfFarm),
-                                sum(dfNational$benefitYieldG=="winner")/nrow(dfNational),
-                                sum(dfSubnational$benefitYieldG=="winner")/nrow(dfSubnational),
-                                sum(dfFarm$benefitYieldG=="winner")/nrow(dfFarm)),
+                                sum(dfNational$benefitStability=="winner")/nrow(dfNational),
+                                sum(dfSubnational$benefitStability=="winner")/nrow(dfSubnational),
+                                sum(dfFarm$benefitStability=="winner")/nrow(dfFarm),
+                                sum(dfNational$benefitYield=="winner")/nrow(dfNational),
+                                sum(dfSubnational$benefitYield=="winner")/nrow(dfSubnational),
+                                sum(dfFarm$benefitYield=="winner")/nrow(dfFarm)),
                                 nam=c("Stability","Stability","Stability","Yield","Yield","Yield"),
                                 Level=rep(c("National","Subnational","Farm"),2)
                                 )
@@ -215,7 +230,7 @@ b1 <- ggplot(data=dfScaleEffectsMain, aes(x=nam, y=propBenefit, fill=Level)) +
 
 
 # plot
-jpeg("results/Fig1.jpeg", width = 16.9, height = 16.9*0.5, units = 'cm', res = 600)
+jpeg("results/Fig1.jpeg", width = 8, height = 8, units = 'cm', res = 600)
 
 ggarrange(a1,b1,
           labels = letters[1:2],font.label=list(size=8),
@@ -365,21 +380,21 @@ mapNational$Area <- as.character(mapNational$Area)
 
 # aggregate ratios
 sum(is.na(dfNational))
-dfNationalMean <- aggregate(cbind(ratioStabilityG,ratioYieldG)~Country,dfNational,mean)
+dfNationalMean <- aggregate(cbind(ratioStability,ratioYield)~Country,dfNational,mean)
 head(dfNationalMean)
-dfNationalState <- aggregate(dfNational[,c("benefitStabilityG","benefitYieldG")],list(dfNational$Country),function(i){sum(as.character(i)=="winner")/length(i)})
+dfNationalState <- aggregate(dfNational[,c("benefitStability","benefitYield")],list(dfNational$Country),function(i){sum(as.character(i)=="winner")/length(i)})
 dfNationalMap <- merge(dfNationalMean,dfNationalState,by.x="Country",by.y="Group.1")
 dfNationalMap$id <- as.character(dfNationalMap$Country)
 head(dfNationalMap)
 
-trintStabilityNational <- as.numeric(quantile(dfNationalMap$ratioStabilityG,probs=seq(0,1,length.out = 4)))
-trintYieldNational <- as.numeric(quantile(dfNationalMap$ratioYieldG,probs=seq(0,1,length.out = 4)))
+trintStabilityNational <- as.numeric(quantile(dfNationalMap$ratioStability,probs=seq(0,1,length.out = 4)))
+trintYieldNational <- as.numeric(quantile(dfNationalMap$ratioYield,probs=seq(0,1,length.out = 4)))
 
-dfNationalMap$dim1 <-car::recode(dfNationalMap$ratioStabilityG,"trintStabilityNational[1]:trintStabilityNational[2]=1; trintStabilityNational[2]:trintStabilityNational[3]=2; trintStabilityNational[3]:trintStabilityNational[4]=3;")
-dfNationalMap$dim2 <-car::recode(dfNationalMap$ratioYieldG,"trintYieldNational[1]:trintYieldNational[2]=1; trintYieldNational[2]:trintYieldNational[3]=2; trintYieldNational[3]:trintYieldNational[4]=3;")
-dfNationalMap <- merge(dfNationalMap[,c("id","benefitStabilityG","benefitYieldG","dim1","dim2")],grd,by=c("dim1","dim2"))
-dfNationalMap$dim1 <-car::recode(dfNationalMap$benefitStabilityG,"0:(1/3)=1; (1/3):(2/3)=2; (2/3):1=3;")
-dfNationalMap$dim2 <-car::recode(dfNationalMap$benefitYieldG,"0:(1/3)=1; (1/3):(2/3)=2; (2/3):1=3;")
+dfNationalMap$dim1 <-car::recode(dfNationalMap$ratioStability,"trintStabilityNational[1]:trintStabilityNational[2]=1; trintStabilityNational[2]:trintStabilityNational[3]=2; trintStabilityNational[3]:trintStabilityNational[4]=3;")
+dfNationalMap$dim2 <-car::recode(dfNationalMap$ratioYield,"trintYieldNational[1]:trintYieldNational[2]=1; trintYieldNational[2]:trintYieldNational[3]=2; trintYieldNational[3]:trintYieldNational[4]=3;")
+dfNationalMap <- merge(dfNationalMap[,c("id","benefitStability","benefitYield","dim1","dim2")],grd,by=c("dim1","dim2"))
+dfNationalMap$dim1 <-car::recode(dfNationalMap$benefitStability,"0:(1/3)=1; (1/3):(2/3)=2; (2/3):1=3;")
+dfNationalMap$dim2 <-car::recode(dfNationalMap$benefitYield,"0:(1/3)=1; (1/3):(2/3)=2; (2/3):1=3;")
 dfNationalMap <- merge(dfNationalMap[,c("id","color","dim1","dim2")],grd,by=c("dim1","dim2"))
 names(dfNationalMap)[4:5] <- c("colorMean","colorState")
 
@@ -409,21 +424,21 @@ mapSubnational$NUTS_ID <- as.character(mapSubnational$NUTS_ID)
 
 # aggregate ratios
 sum(is.na(dfSubnational))
-dfSubnationalMean <- aggregate(cbind(ratioStabilityG,ratioYieldG)~RegionCode,dfSubnational,mean)
+dfSubnationalMean <- aggregate(cbind(ratioStability,ratioYield)~RegionCode,dfSubnational,mean)
 head(dfSubnationalMean)
-dfSubnationalState <- aggregate(dfSubnational[,c("benefitStabilityG","benefitYieldG")],list(dfSubnational$RegionCode),function(i){sum(as.character(i)=="winner")/length(i)})
+dfSubnationalState <- aggregate(dfSubnational[,c("benefitStability","benefitYield")],list(dfSubnational$RegionCode),function(i){sum(as.character(i)=="winner")/length(i)})
 dfSubnationalMap <- merge(dfSubnationalMean,dfSubnationalState,by.x="RegionCode",by.y="Group.1")
 dfSubnationalMap$id <- as.character(dfSubnationalMap$RegionCode)
 head(dfSubnationalMap)
 
-trintStabilitySubnational <- as.numeric(quantile(dfSubnationalMap$ratioStabilityG,probs=seq(0,1,length.out = 4)))
-trintYieldSubnational <- as.numeric(quantile(dfSubnationalMap$ratioYieldG,probs=seq(0,1,length.out = 4)))
+trintStabilitySubnational <- as.numeric(quantile(dfSubnationalMap$ratioStability,probs=seq(0,1,length.out = 4)))
+trintYieldSubnational <- as.numeric(quantile(dfSubnationalMap$ratioYield,probs=seq(0,1,length.out = 4)))
 
-dfSubnationalMap$dim1 <-car::recode(dfSubnationalMap$ratioStabilityG,"trintStabilitySubnational[1]:trintStabilitySubnational[2]=1; trintStabilitySubnational[2]:trintStabilitySubnational[3]=2; trintStabilitySubnational[3]:trintStabilitySubnational[4]=3;")
-dfSubnationalMap$dim2 <-car::recode(dfSubnationalMap$ratioYieldG,"trintYieldSubnational[1]:trintYieldSubnational[2]=1; trintYieldSubnational[2]:trintYieldSubnational[3]=2; trintYieldSubnational[3]:trintYieldSubnational[4]=3;")
-dfSubnationalMap <- merge(dfSubnationalMap[,c("id","benefitStabilityG","benefitYieldG","dim1","dim2")],grd,by=c("dim1","dim2"))
-dfSubnationalMap$dim1 <-car::recode(dfSubnationalMap$benefitStabilityG,"0:(1/3)=1; (1/3):(2/3)=2; (2/3):1=3;")
-dfSubnationalMap$dim2 <-car::recode(dfSubnationalMap$benefitYieldG,"0:(1/3)=1; (1/3):(2/3)=2; (2/3):1=3;")
+dfSubnationalMap$dim1 <-car::recode(dfSubnationalMap$ratioStability,"trintStabilitySubnational[1]:trintStabilitySubnational[2]=1; trintStabilitySubnational[2]:trintStabilitySubnational[3]=2; trintStabilitySubnational[3]:trintStabilitySubnational[4]=3;")
+dfSubnationalMap$dim2 <-car::recode(dfSubnationalMap$ratioYield,"trintYieldSubnational[1]:trintYieldSubnational[2]=1; trintYieldSubnational[2]:trintYieldSubnational[3]=2; trintYieldSubnational[3]:trintYieldSubnational[4]=3;")
+dfSubnationalMap <- merge(dfSubnationalMap[,c("id","benefitStability","benefitYield","dim1","dim2")],grd,by=c("dim1","dim2"))
+dfSubnationalMap$dim1 <-car::recode(dfSubnationalMap$benefitStability,"0:(1/3)=1; (1/3):(2/3)=2; (2/3):1=3;")
+dfSubnationalMap$dim2 <-car::recode(dfSubnationalMap$benefitYield,"0:(1/3)=1; (1/3):(2/3)=2; (2/3):1=3;")
 dfSubnationalMap <- merge(dfSubnationalMap[,c("id","color","dim1","dim2")],grd,by=c("dim1","dim2"))
 names(dfSubnationalMap)[4:5] <- c("colorMean","colorState")
 
@@ -454,21 +469,21 @@ mapFarm$district <- as.character(mapFarm$district)
 
 # aggregate ratios
 sum(is.na(dfFarm))
-dfFarmMean <- aggregate(cbind(ratioStabilityG,ratioYieldG)~districtCode,dfFarm,mean)
+dfFarmMean <- aggregate(cbind(ratioStability,ratioYield)~districtCode,dfFarm,mean)
 head(dfFarmMean)
-dfFarmState <- aggregate(dfFarm[,c("benefitStabilityG","benefitYieldG")],list(dfFarm$districtCode),function(i){sum(as.character(i)=="winner")/length(i)})
+dfFarmState <- aggregate(dfFarm[,c("benefitStability","benefitYield")],list(dfFarm$districtCode),function(i){sum(as.character(i)=="winner")/length(i)})
 dfFarmMap <- merge(dfFarmMean,dfFarmState,by.x="districtCode",by.y="Group.1")
 dfFarmMap$id <- as.character(dfFarmMap$districtCode)
 head(dfFarmMap)
 
-trintStabilityFarm <- as.numeric(quantile(dfFarmMap$ratioStabilityG,probs=seq(0,1,length.out = 4)))
-trintYieldFarm <- as.numeric(quantile(dfFarmMap$ratioYieldG,probs=seq(0,1,length.out = 4)))
+trintStabilityFarm <- as.numeric(quantile(dfFarmMap$ratioStability,probs=seq(0,1,length.out = 4)))
+trintYieldFarm <- as.numeric(quantile(dfFarmMap$ratioYield,probs=seq(0,1,length.out = 4)))
 
-dfFarmMap$dim1 <-car::recode(dfFarmMap$ratioStabilityG,"trintStabilityFarm[1]:trintStabilityFarm[2]=1; trintStabilityFarm[2]:trintStabilityFarm[3]=2; trintStabilityFarm[3]:trintStabilityFarm[4]=3;")
-dfFarmMap$dim2 <-car::recode(dfFarmMap$ratioYieldG,"trintYieldFarm[1]:trintYieldFarm[2]=1; trintYieldFarm[2]:trintYieldFarm[3]=2; trintYieldFarm[3]:trintYieldFarm[4]=3;")
-dfFarmMap <- merge(dfFarmMap[,c("id","benefitStabilityG","benefitYieldG","dim1","dim2")],grd,by=c("dim1","dim2"))
-dfFarmMap$dim1 <-car::recode(dfFarmMap$benefitStabilityG,"0:(1/3)=1; (1/3):(2/3)=2; (2/3):1=3;")
-dfFarmMap$dim2 <-car::recode(dfFarmMap$benefitYieldG,"0:(1/3)=1; (1/3):(2/3)=2; (2/3):1=3;")
+dfFarmMap$dim1 <-car::recode(dfFarmMap$ratioStability,"trintStabilityFarm[1]:trintStabilityFarm[2]=1; trintStabilityFarm[2]:trintStabilityFarm[3]=2; trintStabilityFarm[3]:trintStabilityFarm[4]=3;")
+dfFarmMap$dim2 <-car::recode(dfFarmMap$ratioYield,"trintYieldFarm[1]:trintYieldFarm[2]=1; trintYieldFarm[2]:trintYieldFarm[3]=2; trintYieldFarm[3]:trintYieldFarm[4]=3;")
+dfFarmMap <- merge(dfFarmMap[,c("id","benefitStability","benefitYield","dim1","dim2")],grd,by=c("dim1","dim2"))
+dfFarmMap$dim1 <-car::recode(dfFarmMap$benefitStability,"0:(1/3)=1; (1/3):(2/3)=2; (2/3):1=3;")
+dfFarmMap$dim2 <-car::recode(dfFarmMap$benefitYield,"0:(1/3)=1; (1/3):(2/3)=2; (2/3):1=3;")
 dfFarmMap <- merge(dfFarmMap[,c("id","color","dim1","dim2")],grd,by=c("dim1","dim2"))
 names(dfFarmMap)[4:5] <- c("colorMean","colorState")
 
@@ -500,74 +515,18 @@ g.legend <- ggplot(grd, aes(dim1,dim2,fill=factor(1:9)))+
         panel.background=element_blank(),plot.margin=margin(t=10,b=10,l=10))+
   theme(axis.title=element_text(color="black",size=8),
         axis.title.y = element_text(angle = 90))+
-  labs(x="Stability benefit",y="Yield benefit") 
+  labs(x="Stability benefit",y="     Yield benefit") 
 # theme(axis.title=element_text(size=8))
 library(grid)
-vp<-viewport(width=0.15,height=0.3,x=0.35,y=0.1)
+vp<-viewport(width=0.12,height=0.3,x=0.05,y=0.16)
 
 
-
-jpeg("results/Fig3.jpeg", width = 16.9, height = 16.9*0.5, units = 'cm', res = 600)
-
-ggarrange(a3, b3, c3, d3, e3,f3,
-          labels = c(letters[1:6]),font.label=list(size=8),
-          ncol = 3, nrow = 2,heights = c(1,1))
-print(g.legend,vp=vp)
-
+jpeg("results/Fig3.jpeg", width = 16.9, height = 16.9/((2.074088+1.480554+1.177826)*0.5),units = 'cm', res = 300)
+  plot_grid(a3, b3,c3,d3,e3,f3,
+            labels = c(letters[1:6]),font.label=list(size=8),
+            nrow = 2, ncol=3, rel_widths = c(2.074088, 1.480554,1.177826))
+  print(g.legend,vp=vp)
 dev.off()
-
-
-
-
-
-
-ggplot(ctryMapMean) +
-  geom_sf(aes(fill = color), color = "black",size=0.1)
-
-ggplot() +
-  geom_map(data = mapsBivariate, map = mapsBivariate,
-           aes(x = long, y = lat,  map_id=id, fill=factor(color)),
-           colour = "#7f7f7f", size=0.05) +
-  scale_fill_identity()+
-  theme_void()+
-  theme(legend.position="none")
-
-funMap <- function(shape,df,predictor,title,legend=F){
-  target <- shape
-  quantiles <- as.numeric(quantile(df[,predictor],na.rm=T,probs=seq(0,1,0.2)))
-  target$brks <- cut(target[[predictor]], 
-                     breaks=c((min(quantiles)-1), quantiles[2], quantiles[3], quantiles[4], quantiles[5], quantiles[6]), 
-                     labels=c(round(quantiles[2],2), round(quantiles[3],2),round(quantiles[4],2),round(quantiles[5],2),round(quantiles[6],2)))
-  
-  p <- ggplot(target) +
-    geom_sf(aes(fill = brks), color = "black",size=0.1)+
-    scale_fill_viridis(name=title, discrete=TRUE,drop=F)+
-    theme_classic()+
-    theme(
-      text = element_text(size = 6),
-      legend.key.height = unit(0.2, "cm"), legend.key.width = unit(0.2, "cm"),
-      axis.line=element_blank(),
-      axis.text.x=element_blank(),
-      axis.text.y=element_blank(),
-      axis.ticks=element_blank(),
-      axis.title.x=element_blank(),
-      axis.title.y=element_blank(),
-      panel.background=element_blank(),
-      panel.border=element_blank(),
-      panel.grid.major=element_blank(),
-      panel.grid.minor=element_blank(),
-      plot.background=element_blank())
-  
-  if (!legend)
-  {
-    p <- p + theme(legend.position = "none")
-  }
-  
-  return(p)
-  
-}
-
-
 
 
 

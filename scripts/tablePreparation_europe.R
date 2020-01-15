@@ -236,6 +236,7 @@ head(dfYieldCalories)
 dfProductionEurope <- aggregate(cbind(Production,AreaHarvested)~Year,dfYieldCalories[which(dfYieldCalories$NUTS_ID%in%vecRegionFinal),],sum)
 dfProductionEurope$ProductionDet <- resid(loess(Production ~ Year,data=dfProductionEurope))
 dfProductionEurope$Yield <- dfProductionEurope$Production/dfProductionEurope$AreaHarvested
+dfProductionEurope$YieldDet <- resid(loess(Yield ~ Year,data=dfProductionEurope))
 
 
 ## summarize per time frame 
@@ -245,17 +246,22 @@ lsAll <- lapply(vecRegionFinal,function(g){
   dfProductionRegion <-  dfRelevant[which(dfRelevant$NUTS_ID==g),c("NUTS_ID","Crop","Year","ProductionDet")]
   dfProductionSumRegion <- dfYieldCalories[which(dfYieldCalories$NUTS_ID==g),]
   dfProductionSumRegion$ProductionDet <- resid(loess(Production ~ Year,data=dfProductionSumRegion))
+  dfProductionSumRegion$YieldDet <- resid(loess(Yield ~ Year,data=dfProductionSumRegion))
+  
   dfShannonRegion <- dfShannon[which(dfShannon$NUTS_ID==g),]
   dfClimateRegion <- dfClimateFinalr[which(dfClimateFinalr$NUTS_ID==g),]
   ctry <- substr(g,1,2)
   
   lsAggregate <- lapply(c(1977,1985,1993,2001,2009),function(yearStart){
     # print(yearStart)
-    # global cv
+    # cv production
     dfSummary <- data.frame(Area=g, timePeriod= yearStart)
-    dfSummary$cvG <- sd(dfProductionEurope[which(dfProductionEurope$Year>=yearStart&dfProductionEurope$Year<=(yearStart+7)),"ProductionDet"],na.rm=T)/mean(dfProductionEurope[which(dfProductionEurope$Year>=yearStart&dfProductionEurope$Year<=(yearStart+7)),"Production"],na.rm=T)
-    dfSummary$cvL <- sd(dfProductionSumRegion[which(dfProductionSumRegion$Year>=yearStart&dfProductionSumRegion$Year<=(yearStart+7)),"ProductionDet"],na.rm=T)/mean(dfProductionSumRegion[which(dfProductionSumRegion$Year>=yearStart&dfProductionSumRegion$Year<=(yearStart+7)),"Production"],na.rm=T)
-    
+    dfSummary$cvPG <- sd(dfProductionEurope[which(dfProductionEurope$Year>=yearStart&dfProductionEurope$Year<=(yearStart+7)),"ProductionDet"],na.rm=T)/mean(dfProductionEurope[which(dfProductionEurope$Year>=yearStart&dfProductionEurope$Year<=(yearStart+7)),"Production"],na.rm=T)
+    dfSummary$cvPL <- sd(dfProductionSumRegion[which(dfProductionSumRegion$Year>=yearStart&dfProductionSumRegion$Year<=(yearStart+7)),"ProductionDet"],na.rm=T)/mean(dfProductionSumRegion[which(dfProductionSumRegion$Year>=yearStart&dfProductionSumRegion$Year<=(yearStart+7)),"Production"],na.rm=T)
+    # cv yield
+    dfSummary$cvYG <- sd(dfProductionEurope[which(dfProductionEurope$Year>=yearStart&dfProductionEurope$Year<=(yearStart+7)),"YieldDet"],na.rm=T)/mean(dfProductionEurope[which(dfProductionEurope$Year>=yearStart&dfProductionEurope$Year<=(yearStart+7)),"Yield"],na.rm=T)
+    dfSummary$cvYL <- sd(dfProductionSumRegion[which(dfProductionSumRegion$Year>=yearStart&dfProductionSumRegion$Year<=(yearStart+7)),"YieldDet"],na.rm=T)/mean(dfProductionSumRegion[which(dfProductionSumRegion$Year>=yearStart&dfProductionSumRegion$Year<=(yearStart+7)),"Yield"],na.rm=T)
+    # mean yield
     dfSummary$yieldG <- mean(dfProductionEurope[which(dfProductionEurope$Year>=yearStart&dfProductionEurope$Year<=(yearStart+7)),"Yield"],na.rm=T)
     dfSummary$yieldL <- mean(dfProductionSumRegion[which(dfProductionSumRegion$Year>=yearStart&dfProductionSumRegion$Year<=(yearStart+7)),"Yield"],na.rm=T)
     
@@ -294,26 +300,26 @@ head(dfAll)
 sum(is.na(dfAll))
 ## omit NA
 dfAll <- na.omit(dfAll)
-nrow(dfAll) ## 751 data points
 dfAll <- dfAll[which(dfAll$yieldL>0),]
 length(unique(dfAll$Area)) ## 187 regions
+nrow(dfAll) ## 743 data points
 
 # ratio CV
-dfAll$ratioStabilityG <- dfAll$cvG/dfAll$cvL
+# dfAll$ratioStabilityG <- dfAll$cvG/dfAll$cvL
 
 # ratio yield
-dfAll$ratioYieldG <- dfAll$yieldL/dfAll$yieldG
+# dfAll$ratioYieldG <- dfAll$yieldL/dfAll$yieldG
 
-hist(dfAll$ratioStabilityG)
-hist(dfAll$ratioYieldG)
-
-dfAll$benefitStabilityG <- "winner"
-dfAll[which(dfAll$ratioStabilityG<1),"benefitStabilityG"] <- "loser"
-table(dfAll$benefitStabilityG)
-
-dfAll$benefitYieldG <- "winner"
-dfAll[which(dfAll$ratioYieldG<1),"benefitYieldG"] <- "loser"
-table(dfAll$benefitYieldG)
+# hist(dfAll$ratioStabilityG)
+# hist(dfAll$ratioYieldG)
+# 
+# dfAll$benefitStabilityG <- "winner"
+# dfAll[which(dfAll$ratioStabilityG<1),"benefitStabilityG"] <- "loser"
+# table(dfAll$benefitStabilityG)
+# 
+# dfAll$benefitYieldG <- "winner"
+# dfAll[which(dfAll$ratioYieldG<1),"benefitYieldG"] <- "loser"
+# table(dfAll$benefitYieldG)
 
 
 ### add cntry code and NUTS names
@@ -349,8 +355,8 @@ nrow(dfAll)
 ## save dataframe
 names(dfAll)
 dfAll <- dfAll[,c("NUTS_NAME","NUTS_ID","Area","CNTR_CODE","timePeriod",
-                  "cvG","cvL","ratioStabilityG","benefitStabilityG",
-                  "yieldG","yieldL","ratioYieldG","benefitYieldG",
+                  "cvPG","cvPL","cvYG","cvYL",
+                  "yieldG","yieldL",
                   "asynchrony","diversity",
                   "instabilityTemp","instabilityPrec")]
 names(dfAll)[1:4] <- c("Region","RegionCode","Country","CountryCode")

@@ -293,6 +293,7 @@ sum(is.na(dfYieldCalories))
 dfProductionGlobal <- aggregate(cbind(PR,AR)~year,dfYieldCalories[which(dfYieldCalories$key%in%vecKeyFinal),],sum)
 dfProductionGlobal$ProductionDet <- resid(loess(PR ~ year,data=dfProductionGlobal))
 dfProductionGlobal$Yield <- dfProductionGlobal$PR/dfProductionGlobal$AR
+dfProductionGlobal$YieldDet <- resid(loess(Yield ~ year,data=dfProductionGlobal))
 
 ## aggregate for each time fame
 lsAllDet <- lapply(vecKeyFinal,function(g){
@@ -300,7 +301,8 @@ lsAllDet <- lapply(vecKeyFinal,function(g){
   show(g)
   dfProductionSumKey <- dfYieldCalories[which(dfYieldCalories$key==g),]
   dfProductionKey <- dfProductionFull_Final[which(dfProductionFull_Final$key==g),c("key","crop","year","PRDet")]
-  dfProductionSumKey$ProductionDet <- resid(loess(PR ~ year,data=dfProductionSumKey))      
+  dfProductionSumKey$ProductionDet <- resid(loess(PR ~ year,data=dfProductionSumKey)) 
+  dfProductionSumKey$YieldDet <- resid(loess(Yield ~ year,data=dfProductionSumKey))
   dfManagementKey <- dfManagement[which(dfManagement$key==g),]
   dfShannonKey <- dfShannon[which(dfShannon$key==g),]
   reg <- unique(dfManagementKey$REGION_ID)
@@ -314,9 +316,13 @@ lsAllDet <- lapply(vecKeyFinal,function(g){
     lsAggregate <- lapply(c(2001,2009),function(yearStart){
     # summarize
     dfSummary <- data.frame(id=g,districtCode=reg, districtName=regName,timePeriod= yearStart)
-    dfSummary$cvG <- sd(dfProductionGlobal[which(dfProductionGlobal$year>=yearStart&dfProductionGlobal$year<=(yearStart+7)),"ProductionDet"],na.rm=T)/mean(dfProductionGlobal[which(dfProductionGlobal$year>=yearStart&dfProductionGlobal$year<=(yearStart+7)),"PR"],na.rm=T)
-    dfSummary$cvL <- sd(dfProductionSumKey[which(dfProductionSumKey$year>=yearStart&dfProductionSumKey$year<=(yearStart+7)),"ProductionDet"],na.rm=T)/mean(dfProductionSumKey[which(dfProductionSumKey$year>=yearStart&dfProductionSumKey$year<=(yearStart+7)),"PR"],na.rm=T)
-
+    # cv production
+    dfSummary$cvPG <- sd(dfProductionGlobal[which(dfProductionGlobal$year>=yearStart&dfProductionGlobal$year<=(yearStart+7)),"ProductionDet"],na.rm=T)/mean(dfProductionGlobal[which(dfProductionGlobal$year>=yearStart&dfProductionGlobal$year<=(yearStart+7)),"PR"],na.rm=T)
+    dfSummary$cvPL <- sd(dfProductionSumKey[which(dfProductionSumKey$year>=yearStart&dfProductionSumKey$year<=(yearStart+7)),"ProductionDet"],na.rm=T)/mean(dfProductionSumKey[which(dfProductionSumKey$year>=yearStart&dfProductionSumKey$year<=(yearStart+7)),"PR"],na.rm=T)
+    # cv yield
+    dfSummary$cvYG <- sd(dfProductionGlobal[which(dfProductionGlobal$year>=yearStart&dfProductionGlobal$year<=(yearStart+7)),"YieldDet"],na.rm=T)/mean(dfProductionGlobal[which(dfProductionGlobal$year>=yearStart&dfProductionGlobal$year<=(yearStart+7)),"Yield"],na.rm=T)
+    dfSummary$cvYL <- sd(dfProductionSumKey[which(dfProductionSumKey$year>=yearStart&dfProductionSumKey$year<=(yearStart+7)),"YieldDet"],na.rm=T)/mean(dfProductionSumKey[which(dfProductionSumKey$year>=yearStart&dfProductionSumKey$year<=(yearStart+7)),"Yield"],na.rm=T)
+    # mean yield
     dfSummary$yieldG <- mean(dfProductionGlobal[which(dfProductionGlobal$year>=yearStart&dfProductionGlobal$year<=(yearStart+7)),"Yield"],na.rm=T)
     dfSummary$yieldL <- mean(dfProductionSumKey[which(dfProductionSumKey$year>=yearStart&dfProductionSumKey$year<=(yearStart+7)),"Yield"],na.rm=T)
     
@@ -368,10 +374,10 @@ sum(is.na(dfAll))
 
 
 # ratio CV
-dfAll$ratioStabilityG <- dfAll$cvG/dfAll$cvL
+# dfAll$ratioStabilityG <- dfAll$cvG/dfAll$cvL
 
 # ratio yield
-dfAll$ratioYieldG <- dfAll$yieldL/dfAll$yieldG
+# dfAll$ratioYieldG <- dfAll$yieldL/dfAll$yieldG
 
 ## calculate nitrogen per ha
 dfAll$meanFertilizer_ha <- dfAll$meanFertilizer/dfAll$meanArea
@@ -380,23 +386,21 @@ dfAll$meanFertilizer_ha <- dfAll$meanFertilizer/dfAll$meanArea
 sum(is.na(dfAll))
 ## omit NA
 dfAll <- na.omit(dfAll)
-hist(dfAll$ratioStabilityG)
-hist(dfAll$ratioYieldG)
 length(unique(dfAll$id)) ## 4091 farmers
 
-dfAll$benefitStabilityG <- "winner"
-dfAll[which(dfAll$ratioStabilityG<1),"benefitStabilityG"] <- "loser"
-table(dfAll$benefitStabilityG)
-
-dfAll$benefitYieldG <- "winner"
-dfAll[which(dfAll$ratioYieldG<1),"benefitYieldG"] <- "loser"
-table(dfAll$benefitYieldG)
+# dfAll$benefitStabilityG <- "winner"
+# dfAll[which(dfAll$ratioStabilityG<1),"benefitStabilityG"] <- "loser"
+# table(dfAll$benefitStabilityG)
+# 
+# dfAll$benefitYieldG <- "winner"
+# dfAll[which(dfAll$ratioYieldG<1),"benefitYieldG"] <- "loser"
+# table(dfAll$benefitYieldG)
 
 ## save the dataframe 
 names(dfAll)
 dfAll <- dfAll[,c("id","districtCode","districtName","timePeriod",
-                        "cvG","cvL","ratioStabilityG","benefitStabilityG",
-                        "yieldG","yieldL","ratioYieldG","benefitYieldG",
+                        "cvPG","cvPL","cvYG","cvYL",
+                        "yieldG","yieldL",
                         "asynchrony","diversity","meanFertilizer_ha","meanIrrigation",
                         "instabilityTemp","instabilityPrec"
                         )]
