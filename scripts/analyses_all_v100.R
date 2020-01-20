@@ -15,12 +15,18 @@ lev <- c("National","Subnational","Farm")
 myColors <- c("#4daf4a",vecColors[5], "#ff7f00")
 names(myColors) <- factor(lev,levels=lev)
 
+source("scripts/functionsAnalyses.R")
 
+##################### Regression local
 
 ###### National level
 ### preparation
 # read df
 dfNational <- read.csv("datasetsDerived/dataFinal_global.csv")
+
+# remove outliers
+hist(dfNational$stability)
+dfNational <- dfNational[-which(dfNational$stability%in%boxplot.stats(dfNational$stability)$out),]
 
 ### regression analyses
 ## transformations
@@ -54,6 +60,10 @@ summary(modYieldNational)
 dfSubnational <- read.csv("datasetsDerived/dataFinal_europe.csv")
 dfSubnational <- merge(dfSubnational,dfNational[,c("Country","timePeriod","meanNitrogen","meanIrrigation_share")],by=c("Country","timePeriod"))
 
+# remove outliers
+hist(dfSubnational$stability)
+dfSubnational <- dfSubnational[-which(dfSubnational$stability%in%boxplot.stats(dfSubnational$stability)$out),]
+
 ### regression analyses
 ## transformations
 dfLogSubnational=with(dfSubnational,data.frame(RegionCode,
@@ -83,17 +93,16 @@ summary(modYieldSubnational)
 
 ####### FARM LEVEL
 ### preparation
-dfFarm <- read.csv("C:/Users/egli/Nextcloud/Cloud/PhD_Leipzig/Publications/Globalization/datasetsDerived/dataFinal_farmlevel.csv")
+dfFarm <- read.csv("P:/dataFinal_farmlevel.csv")
 
-# remove very high values
+# remove outliers
 hist(dfFarm$stability)
-# dfFarm <- dfFarm[which(dfFarm$ratioStability<100),]
 dfFarm <- dfFarm[-which(dfFarm$stability%in%boxplot.stats(dfFarm$stability)$out),]
 
 
 ### regression analyses
 ## transformations
-dfLogFarmer=with(dfFarm,data.frame(Farmer,
+dfLogFarm=with(dfFarm,data.frame(Farmer,
                                   stability = log(stability),
                                   yield = log(yield),
                                   diversity,
@@ -102,87 +111,318 @@ dfLogFarmer=with(dfFarm,data.frame(Farmer,
                                   instabilityTemp,instabilityPrec,
                                   timePeriod
 ))
-names(dfLogFarmer)
-head(dfLogFarmer)
+names(dfLogFarm)
+head(dfLogFarm)
 
 # scale predictors for standardized regression
-dfPredictorsFarmer=sapply(dfLogFarmer[,-c(1:3)],function(x)scale(x,center = T,scale=T)[,1])
-dfCenterFarmer=data.frame(Area=dfLogFarmer[,1],ratioStability=dfLogFarmer[,2],ratioYield=dfLogFarmer[,3],dfPredictorsFarmer)
-head(dfCenterFarmer)
+dfPredictorsFarm=sapply(dfLogFarm[,-c(1:3)],function(x)scale(x,center = T,scale=T)[,1])
+dfCenterFarm=data.frame(Farm=dfLogFarm[,1],ratioStability=dfLogFarm[,2],ratioYield=dfLogFarm[,3],dfPredictorsFarm)
+head(dfCenterFarm)
 
 # regression models
-modStabilityFarmer <- lm(ratioStability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterFarmer)
-summary(modStabilityFarmer)
+modStabilityFarm <- lm(ratioStability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterFarm)
+summary(modStabilityFarm)
 
-modYieldFarmer <- lm(ratioYield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterFarmer)
-summary(modYieldFarmer)
+modYieldFarm <- lm(ratioYield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterFarm)
+summary(modYieldFarm)
 
+
+##################### Regression scale
+###### National level
+### preparation
+dfNationalScale <- read.csv("datasetsDerived/dataScales_global.csv")
+dfNationalScale <- dfNationalScale[,c("Area","timePeriod","stability","yield","prop")]
+names(dfNationalScale)[1] <- "Country"
+dfNationalScaleAgg <- aggregate(cbind(stability,yield)~Country+timePeriod+prop,dfNationalScale,mean)
+
+# add original data
+dfNationalRed <- dfNational
+dfNationalRed$prop <- 0
+dfNationalScaleAgg <- rbind(dfNationalRed[,c("Country","timePeriod","stability","yield","prop")],dfNationalScaleAgg[,c("Country","timePeriod","stability","yield","prop")])
+
+# remove outliers
+hist(dfNationalScaleAgg$stability)
+intOutlierNational <- which(dfNationalScaleAgg$stability%in%boxplot.stats(dfNationalScaleAgg$stability)$out)
+if (length(intOutlierNational)>0)
+{
+  dfNationalScaleAgg <- dfNationalScaleAgg[-intOutlierNational,]
+}
+
+### regression analyses
+## transformations
+dfLogNationalScale=with(dfNationalScaleAgg,data.frame(Country,
+                                        stability = log(stability),
+                                        yield = log(yield),
+                                        prop, 
+                                        timePeriod
+))
+
+# scale predictors for standardized regression
+dfPredictorsNationalScale=sapply(dfLogNationalScale[,-c(1:3)],function(x)scale(x,center = T,scale=T)[,1])
+dfCenterNationalScale=data.frame(Country=dfLogNationalScale[,1],stability=dfLogNationalScale[,2],yield=dfLogNationalScale[,3],dfPredictorsNationalScale)
+head(dfCenterNationalScale)
+
+## regression models
+modStabilityNationalScale <- lm(stability~prop+timePeriod,dfCenterNationalScale)
+summary(modStabilityNationalScale)
+
+modYieldNationalScale <- lm(yield~prop+timePeriod,dfCenterNationalScale)
+summary(modYieldNationalScale)
+
+###### European level
+### preparation
+dfSubnationalScale <- read.csv("datasetsDerived/dataScales_europe.csv")
+dfSubnationalScale <- dfSubnationalScale[,c("Area","timePeriod","stability","yield","prop")]
+names(dfSubnationalScale)[1] <- "RegionCode"
+dfSubnationalScaleAgg <- aggregate(cbind(stability,yield)~RegionCode+timePeriod+prop,dfSubnationalScale,mean)
+
+# add original data
+dfSubnationalRed <- dfSubnational
+dfSubnationalRed$prop <- 0
+dfSubnationalScaleAgg <- rbind(dfSubnationalRed[,c("RegionCode","timePeriod","stability","yield","prop")],dfSubnationalScaleAgg[,c("RegionCode","timePeriod","stability","yield","prop")])
+
+# remove outliers
+hist(dfSubnationalScaleAgg$stability)
+intOutlierSubnational <- which(dfSubnationalScaleAgg$stability%in%boxplot.stats(dfSubnationalScaleAgg$stability)$out)
+if (length(intOutlierSubnational)>0)
+{
+  dfSubnationalScaleAgg <- dfSubnationalScaleAgg[-intOutlierSubnational,]
+}
+
+### regression analyses
+## transformations
+dfLogSubnationalScale=with(dfSubnationalScaleAgg,data.frame(RegionCode,
+                                                      stability = log(stability),
+                                                      yield = log(yield),
+                                                      prop, 
+                                                      timePeriod
+))
+
+# scale predictors for standardized regression
+dfPredictorsSubnationalScale=sapply(dfLogSubnationalScale[,-c(1:3)],function(x)scale(x,center = T,scale=T)[,1])
+dfCenterSubnationalScale=data.frame(RegionCode=dfLogSubnationalScale[,1],stability=dfLogSubnationalScale[,2],yield=dfLogSubnationalScale[,3],dfPredictorsSubnationalScale)
+head(dfCenterSubnationalScale)
+
+## regression models
+modStabilitySubnationalScale <- lm(stability~prop+timePeriod,dfCenterSubnationalScale)
+summary(modStabilitySubnationalScale)
+
+modYieldSubnationalScale <- lm(yield~prop+timePeriod,dfCenterSubnationalScale)
+summary(modYieldSubnationalScale)
+
+###### Farm level
+### preparation
+dfFarmScale <- read.csv("datasetsDerived/dataScales_farm.csv")
+dfFarmScale <- dfFarmScale[,c("Area","timePeriod","stability","yield","prop")]
+names(dfFarmScale)[1] <- "Farmer"
+dfFarmScaleAgg <- aggregate(cbind(stability,yield)~Farmer+timePeriod+prop,dfFarmScale,mean)
+
+# add original data
+dfFarmRed <- dfFarm
+dfFarmRed$prop <- 0
+dfFarmScaleAgg <- rbind(dfFarmRed[,c("Farmer","timePeriod","stability","yield","prop")],dfFarmScaleAgg[,c("Farmer","timePeriod","stability","yield","prop")])
+
+# remove outliers
+hist(dfFarmScaleAgg$stability)
+intOutlierFarm <- which(dfFarmScaleAgg$stability%in%boxplot.stats(dfFarmScaleAgg$stability)$out)
+if (length(intOutlierFarm)>0)
+{
+  dfFarmScaleAgg <- dfFarmScaleAgg[-intOutlierFarm,]
+}
+
+### regression analyses
+## transformations
+dfLogFarmScale=with(dfFarmScaleAgg,data.frame(Farmer,
+                                              stability = log(stability),
+                                              yield = log(yield),
+                                              prop, 
+                                              timePeriod
+))
+
+# scale predictors for standardized regression
+dfPredictorsFarmScale=sapply(dfLogFarmScale[,-c(1:3)],function(x)scale(x,center = T,scale=T)[,1])
+dfCenterFarmScale=data.frame(Country=dfLogFarmScale[,1],stability=dfLogFarmScale[,2],yield=dfLogFarmScale[,3],dfPredictorsFarmScale)
+head(dfCenterFarmScale)
+
+## regression models
+modStabilityFarmScale <- lm(stability~prop+timePeriod,dfCenterFarmScale)
+summary(modStabilityFarmScale)
+
+modYieldFarmScale <- lm(yield~prop+timePeriod,dfCenterFarmScale)
+summary(modYieldFarmScale)
+
+##################### Regression combined
+###### National level
+### preparation
+
+# get extremes
+dfNationalCombined <- merge(dfNationalRed,dfNationalScaleAgg[which(dfNationalScaleAgg$prop==1),],by=c("Country","timePeriod"))
+head(dfNationalCombined)
+dfNationalCombined$slopeStability <- dfNationalCombined$stability.y/dfNationalCombined$stability.x
+dfNationalCombined$slopeYield <- dfNationalCombined$yield.y/dfNationalCombined$yield.x
+
+# remove outliers
+hist(dfNationalCombined$slopeStability)
+intOutlierNational <- which(dfNationalCombined$slopeStability%in%boxplot.stats(dfNationalCombined$slopeStability)$out)
+if (length(intOutlierNational)>0)
+{
+  dfNationalCombined <- dfNationalCombined[-intOutlierNational,]
+}
+
+### regression analyses
+## transformations
+dfLogNationalCombined=with(dfNationalCombined,data.frame(Country,
+                                         slopeStability = log(slopeStability),
+                                         slopeYield = log(slopeYield),
+                                         diversity, 
+                                         irrigation=sqrt(meanIrrigation_share),
+                                         fertilizer=sqrt(meanNitrogen),
+                                         instabilityTemp,instabilityPrec,
+                                         timePeriod
+))
+
+# scale predictors for standardized regression
+dfPredictorsNationalCombined=sapply(dfLogNationalCombined[,-c(1:3)],function(x)scale(x,center = T,scale=T)[,1])
+dfCenterNationalCombined=data.frame(Country=dfLogNationalCombined[,1],slopeStability=dfLogNationalCombined[,2],slopeYield=dfLogNationalCombined[,3],dfPredictorsNationalCombined)
+head(dfCenterNationalCombined)
+
+## regression models
+modStabilityNationalCombined <- lm(slopeStability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterNationalCombined)
+summary(modStabilityNationalCombined)
+
+modYieldNationalCombined <- lm(slopeYield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterNationalCombined)
+summary(modYieldNationalCombined)
+
+###### European level
+### preparation
+
+# get extremes
+dfSubnationalCombined <- merge(dfSubnationalRed,dfSubnationalScaleAgg[which(dfSubnationalScaleAgg$prop==1),],by=c("RegionCode","timePeriod"))
+head(dfSubnationalCombined)
+dfSubnationalCombined$slopeStability <- dfSubnationalCombined$stability.y/dfSubnationalCombined$stability.x
+dfSubnationalCombined$slopeYield <- dfSubnationalCombined$yield.y/dfSubnationalCombined$yield.x
+
+# remove outliers
+hist(dfSubnationalCombined$slopeStability)
+intOutlierSubnational <- which(dfSubnationalCombined$slopeStability%in%boxplot.stats(dfSubnationalCombined$slopeStability)$out)
+if (length(intOutlierSubnational)>0)
+{
+  dfSubnationalCombined <- dfSubnationalCombined[-intOutlierSubnational,]
+}
+### regression analyses
+## transformations
+dfLogSubnationalCombined=with(dfSubnationalCombined,data.frame(Country,
+                                                         slopeStability = log(slopeStability),
+                                                         slopeYield = log(slopeYield),
+                                                         diversity, 
+                                                         irrigation=sqrt(meanIrrigation_share),
+                                                         fertilizer=sqrt(meanNitrogen),
+                                                         instabilityTemp,instabilityPrec,
+                                                         timePeriod
+))
+
+# scale predictors for standardized regression
+dfPredictorsSubnationalCombined=sapply(dfLogSubnationalCombined[,-c(1:3)],function(x)scale(x,center = T,scale=T)[,1])
+dfCenterSubnationalCombined=data.frame(Country=dfLogSubnationalCombined[,1],slopeStability=dfLogSubnationalCombined[,2],slopeYield=dfLogSubnationalCombined[,3],dfPredictorsSubnationalCombined)
+head(dfCenterSubnationalCombined)
+
+## regression models
+modStabilitySubnationalCombined <- lm(slopeStability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterSubnationalCombined)
+summary(modStabilitySubnationalCombined)
+
+modYieldSubnationalCombined <- lm(slopeYield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterSubnationalCombined)
+summary(modYieldSubnationalCombined)
+
+###### Farm level
+### preparation
+
+# get extremes
+dfFarmCombined <- merge(dfFarmRed,dfFarmScaleAgg[which(dfFarmScaleAgg$prop==1),],by=c("Farmer","timePeriod"))
+head(dfFarmCombined)
+dfFarmCombined$slopeStability <- dfFarmCombined$stability.y/dfFarmCombined$stability.x
+dfFarmCombined$slopeYield <- dfFarmCombined$yield.y/dfFarmCombined$yield.x
+
+# remove outliers
+hist(dfFarmCombined$slopeStability)
+intOutlierFarm <- which(dfFarmCombined$slopeStability%in%boxplot.stats(dfFarmCombined$slopeStability)$out)
+if (length(intOutlierFarm)>0)
+{
+  dfFarmCombined <- dfFarmCombined[-intOutlierFarm,]
+}
+### regression analyses
+## transformations
+dfLogFarmCombined=with(dfFarmCombined,data.frame(Farmer,
+                                                         slopeStability = log(slopeStability),
+                                                         slopeYield = log(slopeYield),
+                                                         diversity, 
+                                                         irrigation=sqrt(meanIrrigation),
+                                                         fertilizer=sqrt(meanFertilizer),
+                                                         instabilityTemp,instabilityPrec,
+                                                         timePeriod
+))
+
+# scale predictors for standardized regression
+dfPredictorsFarmCombined=sapply(dfLogFarmCombined[,-c(1:3)],function(x)scale(x,center = T,scale=T)[,1])
+dfCenterFarmCombined=data.frame(Country=dfLogFarmCombined[,1],slopeStability=dfLogFarmCombined[,2],slopeYield=dfLogFarmCombined[,3],dfPredictorsFarmCombined)
+head(dfCenterFarmCombined)
+
+## regression models
+modStabilityFarmCombined <- lm(slopeStability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterFarmCombined)
+summary(modStabilityFarmCombined)
+
+modYieldFarmCombined <- lm(slopeYield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterFarmCombined)
+summary(modYieldFarmCombined)
 
 ###### FIGURES
 
 ### Fig 1. 
-## extract necessary information
-dfScaleEffectsMain <- data.frame(ratioMean=c(
-                                mean(dfNational$ratioStability),
-                                mean(dfSubnational$ratioStability),
-                                mean(dfFarm$ratioStability),
-                                mean(dfNational$ratioYield),
-                                mean(dfSubnational$ratioYield),
-                                mean(dfFarm$ratioYield)),
-                                ratioSD=c(
-                                sd(dfNational$ratioStability)/length(dfNational$ratioStability),
-                                sd(dfSubnational$ratioStability)/length(dfSubnational$ratioStability),
-                                sd(dfFarm$ratioStability)/length(dfFarm$ratioStability),
-                                sd(dfNational$ratioYield)/length(dfNational$ratioYield),
-                                sd(dfSubnational$ratioYield)/length(dfSubnational$ratioYield),
-                                sd(dfFarm$ratioYield)/length(dfFarm$ratioYield)),
-                                propBenefit=c(
-                                sum(dfNational$benefitStability=="winner")/nrow(dfNational),
-                                sum(dfSubnational$benefitStability=="winner")/nrow(dfSubnational),
-                                sum(dfFarm$benefitStability=="winner")/nrow(dfFarm),
-                                sum(dfNational$benefitYield=="winner")/nrow(dfNational),
-                                sum(dfSubnational$benefitYield=="winner")/nrow(dfSubnational),
-                                sum(dfFarm$benefitYield=="winner")/nrow(dfFarm)),
-                                nam=c("Stability","Stability","Stability","Yield","Yield","Yield"),
-                                Level=rep(c("National","Subnational","Farm"),2)
-                                )
+# barplot of local stability model
+dfRegStabilityNational <- data.frame(summary(modStabilityNational)$coefficients[2:7,c(1,2,4)])
+names(dfRegStabilityNational) <- c("Effect","SE","pVal")
+dfRegStabilityNational$nam <- c("Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time")
+dfRegStabilityNational$Level <- "National"
 
-dfScaleEffectsMain$Level <- factor(dfScaleEffectsMain$Level, levels = c("National","Subnational","Farm"))
+dfRegStabilitySubnational <- data.frame(summary(modStabilitySubnational)$coefficients)[2:7,c(1,2,4)]
+names(dfRegStabilitySubnational) <- c("Effect","SE","pVal")
+dfRegStabilitySubnational$nam <- c("Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time")
+dfRegStabilitySubnational$Level <-  "Subnational"
 
+dfRegStabilityFarm <- data.frame(summary(modStabilityFarm)$coefficients)[2:7,c(1,2,4)]
+names(dfRegStabilityFarm) <- c("Effect","SE","pVal")
+dfRegStabilityFarm$nam <- c("Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time")
+dfRegStabilityFarm$Level <-  "Farm"
 
-a1 <- ggplot(data=dfScaleEffectsMain, aes(x=nam, y=ratioMean, fill=Level)) +
-  geom_bar(stat="identity", position=position_dodge())+
-  geom_errorbar(aes(ymin=ratioMean-ratioSD, ymax=ratioMean+ratioSD), width=.1,
-                position=position_dodge(.9)) +
-  theme_classic() +  
-  xlab("") +
-  ylab("Mean ratio") +
-  theme(axis.title.y=element_text(size=8)) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1,size=8))+
-  theme(axis.text.y = element_text(size=8))+
-  scale_fill_manual(name = "Level",values = myColors)+
-  theme(legend.position = c(0.9, 0.8))+
-  theme(legend.position = "none") +
-  theme(plot.margin = unit(c(0.2,0.3,-0.5,0.2), "cm")) 
+dfCombinedStabiliy <- funCombine(dfRegStabilityNational,dfRegStabilitySubnational,dfRegStabilityFarm)
+dfCombinedStabiliy <- dfCombinedStabiliy[unlist(lapply(1:6,function(i)seq(i,18,6))),]
+dfTextStability <- data.frame(xpos=sort(c(1:6-0.3,1:6,1:6+0.3)),ypos=dfCombinedStabiliy$labHeight,lab=dfCombinedStabiliy$lab,Level=dfCombinedStabiliy$Level)
 
-b1 <- ggplot(data=dfScaleEffectsMain, aes(x=nam, y=propBenefit, fill=Level)) +
-  geom_bar(stat="identity", position=position_dodge())+
-  theme_classic() +  
-  xlab("") +
-  ylab("Prop. winner") +
-  theme(axis.title.y=element_text(size=8)) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1,size=8))+
-  theme(axis.text.y = element_text(size=8))+
-  scale_fill_manual(name = "Level",values = myColors)+
-  theme(legend.position = c(0.9, 0.8))+
-  theme(legend.title = element_text(size = 8),
-        legend.text = element_text(size = 8))+
-  theme(legend.key.size = unit(0.2,"cm")) +
-  theme(plot.margin = unit(c(0.2,0.3,-0.5,0.2), "cm")) 
+a1 <- funPlot(dfCombinedStabiliy,dfTextStability,0.3,"Standardized regression coefficient",F)
 
+# b
+# barplot of effects: combine coefficents of both modesl
+dfRegYieldNational <- data.frame(summary(modYieldNational)$coefficients[2:7,c(1,2,4)])
+names(dfRegYieldNational) <- c("Effect","SE","pVal")
+dfRegYieldNational$nam <- c("Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time")
+dfRegYieldNational$Level <- "National"
+
+dfRegYieldSubnational <- data.frame(summary(modYieldSubnational)$coefficients)[2:7,c(1,2,4)]
+names(dfRegYieldSubnational) <- c("Effect","SE","pVal")
+dfRegYieldSubnational$nam <- c("Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time")
+dfRegYieldSubnational$Level <-  "Subnational"
+
+dfRegYieldFarm <- data.frame(summary(modYieldFarm)$coefficients)[2:7,c(1,2,4)]
+names(dfRegYieldFarm) <- c("Effect","SE","pVal")
+dfRegYieldFarm$nam <- c("Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time")
+dfRegYieldFarm$Level <-  "Farm"
+
+dfCombinedYield <- funCombine(dfRegYieldNational,dfRegYieldSubnational,dfRegYieldFarm)
+dfCombinedYield <- dfCombinedYield[unlist(lapply(1:6,function(i)seq(i,18,6))),]
+dfTextYield <- data.frame(xpos=sort(c(1:6-0.3,1:6,1:6+0.3)),ypos=dfCombinedYield$labHeight,lab=dfCombinedYield$lab,Level=dfCombinedYield$Level)
+
+b1 <- funPlot(dfCombinedYield,dfTextYield,0.6,"Standardized regression coefficient",T)
 
 # plot
-jpeg("results/Fig1.jpeg", width = 8, height = 8, units = 'cm', res = 600)
+jpeg("results/Fig1.jpeg", width = 16.9, height = 16.9*0.5, units = 'cm', res = 600)
 
 ggarrange(a1,b1,
           labels = letters[1:2],font.label=list(size=8),
@@ -190,116 +430,48 @@ ggarrange(a1,b1,
 
 dev.off()
 
+### Fig 2
+# barplot of scale stability model
+dfRegStabilityNationalScale <- data.frame(summary(modStabilityNationalScale)$coefficients[2:3,c(1,2,4)])
+names(dfRegStabilityNationalScale) <- c("Effect","SE","pVal")
+dfRegStabilityNationalScale$nam <- c("Scale","Time")
+dfRegStabilityNationalScale$Level <- "National"
 
+dfRegStabilitySubnationalScale <- data.frame(summary(modStabilitySubnationalScale)$coefficients[2:3,c(1,2,4)])
+names(dfRegStabilitySubnationalScale) <- c("Effect","SE","pVal")
+dfRegStabilitySubnationalScale$nam <- c("Scale","Time")
+dfRegStabilitySubnationalScale$Level <- "Subnational"
 
-## Fig 2
+dfRegStabilityFarmScale <- data.frame(summary(modStabilityFarmScale)$coefficients[2:3,c(1,2,4)])
+names(dfRegStabilityFarmScale) <- c("Effect","SE","pVal")
+dfRegStabilityFarmScale$nam <- c("Scale","Time")
+dfRegStabilityFarmScale$Level <- "Farm"
 
-# barplot of effects: combine coefficents of both modesl
-dfRegNational <- data.frame(summary(modAsynchronyStabilityNational)$coefficients[2:7,c(1,2,4)])
-names(dfRegNational) <- c("Effect","SE","pVal")
-dfRegNational$nam <- c("Asynchrony","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time")
-dfRegNational$Level <- "National"
+dfCombinedStabilityScale <- funCombine(dfRegStabilityNationalScale,dfRegStabilitySubnationalScale,dfRegStabilityFarmScale)
+dfCombinedStabilityScale <- dfCombinedStabilityScale[unlist(lapply(1:2,function(i)seq(i,6,2))),]
+dfTextStabilityScale <- data.frame(xpos=sort(c(1:2-0.3,1:2,1:2+0.3)),ypos=dfCombinedStabilityScale$labHeight,lab=dfCombinedStabilityScale$lab,Level=dfCombinedStabilityScale$Level)
+a2 <- funPlot(dfCombinedStabilityScale,dfTextStabilityScale,0.4,"Standardized regression coefficient",F)
 
-dfRegSubnational <- data.frame(summary(modAsynchronyStabilitySubnational)$coefficients)[2:7,c(1,2,4)]
-names(dfRegSubnational) <- c("Effect","SE","pVal")
-dfRegSubnational$nam <- c("Asynchrony","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time")
-dfRegSubnational$Level <-  "Subnational"
+# barplot of scale yield model
+dfRegYieldNationalScale <- data.frame(summary(modYieldNationalScale)$coefficients[2:3,c(1,2,4)])
+names(dfRegYieldNationalScale) <- c("Effect","SE","pVal")
+dfRegYieldNationalScale$nam <- c("Scale","Time")
+dfRegYieldNationalScale$Level <- "National"
 
-dfRegFarm <- data.frame(summary(modAsynchronyStabilityFarmer)$coefficients)[2:7,c(1,2,4)]
-names(dfRegFarm) <- c("Effect","SE","pVal")
-dfRegFarm$nam <- c("Asynchrony","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time")
-dfRegFarm$Level <-  "Farm"
+dfRegYieldSubnationalScale <- data.frame(summary(modYieldSubnationalScale)$coefficients[2:3,c(1,2,4)])
+names(dfRegYieldSubnationalScale) <- c("Effect","SE","pVal")
+dfRegYieldSubnationalScale$nam <- c("Scale","Time")
+dfRegYieldSubnationalScale$Level <- "Subnational"
 
-dfCombinedStabiliy <- rbind(dfRegNational,dfRegSubnational,dfRegFarm)
-dfCombinedStabiliy$Level <- factor(dfCombinedStabiliy$Level, levels = c("National","Subnational","Farm"))
-dfCombinedStabiliy$nam <- factor(dfCombinedStabiliy$nam, levels = unique(dfCombinedStabiliy$nam))
-dfCombinedStabiliy$labHeight <- dfCombinedStabiliy$Effect + dfCombinedStabiliy$SE + 0.03
-dfCombinedStabiliy[which(dfCombinedStabiliy$Effect<0),"labHeight"] <- dfCombinedStabiliy[which(dfCombinedStabiliy$Effect<0),"Effect"]- dfCombinedStabiliy[which(dfCombinedStabiliy$Effect<0),"SE"] - 0.03
-dfCombinedStabiliy$lab <- ""
-dfCombinedStabiliy[which(dfCombinedStabiliy$pVal<0.05),"lab"] <- "*"
-dfCombinedStabiliy[which(dfCombinedStabiliy$pVal<0.01),"lab"] <- "**"
-dfCombinedStabiliy[which(dfCombinedStabiliy$pVal<0.001),"lab"] <- "***"
-dfCombinedStabiliy[which(dfCombinedStabiliy$pVal>=0.05),"lab"] <- "NS"
-dfCombinedStabiliy$lab <- factor(dfCombinedStabiliy$lab, levels = unique(dfCombinedStabiliy$lab))
+dfRegYieldFarmScale <- data.frame(summary(modYieldFarmScale)$coefficients[2:3,c(1,2,4)])
+names(dfRegYieldFarmScale) <- c("Effect","SE","pVal")
+dfRegYieldFarmScale$nam <- c("Scale","Time")
+dfRegYieldFarmScale$Level <- "Farm"
 
-dfCombinedStabiliy <- dfCombinedStabiliy[unlist(lapply(1:6,function(i)seq(i,18,6))),]
-dfText <- data.frame(xpos=sort(c(1:6-0.3,1:6,1:6+0.3)),ypos=dfCombinedStabiliy$labHeight,lab=dfCombinedStabiliy$lab,Level=dfCombinedStabiliy$Level)
-
-
-a2 <- ggplot(data=dfCombinedStabiliy, aes(x=nam, y=Effect, fill=Level)) +
-  geom_bar(stat="identity", position=position_dodge())+
-  geom_errorbar(aes(ymin=Effect-SE, ymax=Effect+SE), width=.1,
-                position=position_dodge(.9)) +
-  geom_text(data=dfText,aes(x=xpos,y=ypos,label=lab),size=2)+  
-  theme_classic() +  
-  xlab("") +
-  scale_y_continuous(breaks = round(seq(-0.6,0.6, by = 0.1),1),limits=c(-0.6,0.6)) +
-  # scale_y_discrete("Standardized regression coefficient", seq(-0.3,0.3,0.1))+
-  ylab("Standardized regression coefficient") +
-  theme(axis.title.y=element_text(size=8)) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1,size=8))+
-  theme(axis.text.y = element_text(size=8))+
-  scale_fill_manual(name = "Level",values = myColors)+
-  geom_hline(yintercept=0)+
-  theme(legend.position = "none") +
-  theme(plot.margin = unit(c(0.2,0.3,-0.5,0.2), "cm")) 
-
-
-# b
-# barplot of effects: combine coefficents of both modesl
-dfRegNational <- data.frame(summary(modAsynchronyYieldNational)$coefficients[2:7,c(1,2,4)])
-names(dfRegNational) <- c("Effect","SE","pVal")
-dfRegNational$nam <- c("Asynchrony","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time")
-dfRegNational$Level <- "National"
-
-dfRegSubnational <- data.frame(summary(modAsynchronyYieldSubnational)$coefficients)[2:7,c(1,2,4)]
-names(dfRegSubnational) <- c("Effect","SE","pVal")
-dfRegSubnational$nam <- c("Asynchrony","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time")
-dfRegSubnational$Level <-  "Subnational"
-
-dfRegFarm <- data.frame(summary(modAsynchronyYieldFarmer)$coefficients)[2:7,c(1,2,4)]
-names(dfRegFarm) <- c("Effect","SE","pVal")
-dfRegFarm$nam <- c("Asynchrony","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time")
-dfRegFarm$Level <-  "Farm"
-
-dfCombinedYield <- rbind(dfRegNational,dfRegSubnational,dfRegFarm)
-dfCombinedYield$Level <- factor(dfCombinedYield$Level, levels = c("National","Subnational","Farm"))
-dfCombinedYield$nam <- factor(dfCombinedYield$nam, levels = unique(dfCombinedYield$nam))
-dfCombinedYield$labHeight <- dfCombinedYield$Effect + dfCombinedYield$SE + 0.03
-dfCombinedYield[which(dfCombinedYield$Effect<0),"labHeight"] <- dfCombinedYield[which(dfCombinedYield$Effect<0),"Effect"]- dfCombinedYield[which(dfCombinedYield$Effect<0),"SE"] - 0.03
-dfCombinedYield$lab <- ""
-dfCombinedYield[which(dfCombinedYield$pVal<0.05),"lab"] <- "*"
-dfCombinedYield[which(dfCombinedYield$pVal<0.01),"lab"] <- "**"
-dfCombinedYield[which(dfCombinedYield$pVal<0.001),"lab"] <- "***"
-dfCombinedYield[which(dfCombinedYield$pVal>=0.05),"lab"] <- "NS"
-dfCombinedYield$lab <- factor(dfCombinedYield$lab, levels = unique(dfCombinedYield$lab))
-
-dfCombinedYield <- dfCombinedYield[unlist(lapply(1:6,function(i)seq(i,18,6))),]
-dfText <- data.frame(xpos=sort(c(1:6-0.3,1:6,1:6+0.3)),ypos=dfCombinedYield$labHeight,lab=dfCombinedYield$lab,Level=dfCombinedYield$Level)
-
-
-b2 <- ggplot(data=dfCombinedYield, aes(x=nam, y=Effect, fill=Level)) +
-  geom_bar(stat="identity", position=position_dodge())+
-  geom_errorbar(aes(ymin=Effect-SE, ymax=Effect+SE), width=.1,
-                position=position_dodge(.9)) +
-  geom_text(data=dfText,aes(x=xpos,y=ypos,label=lab),size=2)+  
-  theme_classic() +  
-  xlab("") +
-  scale_y_continuous(breaks = round(seq(-0.6,0.6, by = 0.1),1),limits=c(-0.6,0.6)) +
-  # scale_y_discrete("Standardized regression coefficient", seq(-0.3,0.3,0.1))+
-  ylab("") +
-  theme(axis.title.y=element_text(size=8)) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1,size=8))+
-  theme(axis.text.y = element_text(size=8))+
-  scale_fill_manual(name = "Level",values = myColors)+
-  geom_hline(yintercept=0)+
-  theme(legend.position = c(0.9, 0.8))+
-  theme(legend.title = element_text(size = 8),
-        legend.text = element_text(size = 8))+
-  theme(legend.key.size = unit(0.2,"cm")) +
-  theme(plot.margin = unit(c(0.2,0.3,-0.5,0.2), "cm")) 
-
-
+dfCombinedYieldScale <- funCombine(dfRegYieldNationalScale,dfRegYieldSubnationalScale,dfRegYieldFarmScale)
+dfCombinedYieldScale <- dfCombinedYieldScale[unlist(lapply(1:2,function(i)seq(i,6,2))),]
+dfTextYieldScale <- data.frame(xpos=sort(c(1:2-0.3,1:2,1:2+0.3)),ypos=dfCombinedYieldScale$labHeight,lab=dfCombinedYieldScale$lab,Level=dfCombinedYieldScale$Level)
+b2 <- funPlot(dfCombinedYieldScale,dfTextYieldScale,0.3,"Standardized regression coefficient",T)
 
 # plot
 jpeg("results/Fig2.jpeg", width = 16.9, height = 16.9*0.5, units = 'cm', res = 600)
@@ -309,6 +481,123 @@ ggarrange(a2,b2,
           ncol = 2, nrow = 1)
 
 dev.off()
+
+### Fig 3: raw effect of diversity and scales
+## global
+# stability
+dfPredictNational <- data.frame(diversity=rep(0,1000),instabilityTemp=0,instabilityPrec=0,irrigation=0,fertilizer=0,timePeriod=0)
+dfPredictSubnational <- data.frame(diversity=rep(0,1000),instabilityTemp=0,instabilityPrec=0,irrigation=0,fertilizer=0,timePeriod=0)
+dfPredictFarm <- data.frame(diversity=rep(0,1000),instabilityTemp=0,instabilityPrec=0,irrigation=0,fertilizer=0,timePeriod=0)
+dfPredictNationalScale <- data.frame(prop=rep(0,1000),timePeriod=0)
+dfPredictSubnationalScale <- data.frame(prop=rep(0,1000),timePeriod=0)
+dfPredictFarmScale <- data.frame(prop=rep(0,1000),timePeriod=0)
+
+dfPredictStability <- rbind(
+                  funPred(dfPredictNational,dfCenterNational,dfLogNational,modStabilityNational,"diversity","National"),
+                  funPred(dfPredictSubnational,dfCenterSubnational,dfLogSubnational,modStabilitySubnational,"diversity","Subnational"),
+                  funPred(dfPredictFarm,dfCenterFarm,dfLogFarm,modStabilityFarm,"diversity","Farm")
+                  )
+
+dfPredictStabilityScale <- rbind(
+  funPred(dfPredictNationalScale,dfCenterNationalScale,dfLogNationalScale,modStabilityNationalScale,"prop","National"),
+  funPred(dfPredictSubnationalScale,dfCenterSubnationalScale,dfLogSubnationalScale,modStabilitySubnationalScale,"prop","Subnational"),
+  funPred(dfPredictFarmScale,dfCenterFarmScale,dfLogFarmScale,modStabilityFarmScale,"prop","Farm")
+)
+
+# yield
+dfPredictYield <- rbind(
+  funPred(dfPredictNational,dfCenterNational,dfLogNational,modYieldNational,"diversity","National"),
+  funPred(dfPredictSubnational,dfCenterSubnational,dfLogSubnational,modYieldSubnational,"diversity","Subnational"),
+  funPred(dfPredictFarm,dfCenterFarm,dfLogFarm,modYieldFarm,"diversity","Farm")
+)
+
+dfPredictYieldScale <- rbind(
+  funPred(dfPredictNationalScale,dfCenterNationalScale,dfLogNationalScale,modYieldNationalScale,"prop","National"),
+  funPred(dfPredictSubnationalScale,dfCenterSubnationalScale,dfLogSubnationalScale,modYieldSubnationalScale,"prop","Subnational"),
+  funPred(dfPredictFarmScale,dfCenterFarmScale,dfLogFarmScale,modYieldFarmScale,"prop","Farm")
+)
+
+a3 <- funPlotPred(dfPredictStability,80,"Diversity","Yield stability",T)
+# b3 <- funPlotPred(dfPredictYield,40000000,"Diversity","Yield",F)
+b3 <- funPlotPred(dfPredictStabilityScale,80,"Scale","Yield stability",F)
+
+# plot
+jpeg("results/Fig3.jpeg", width = 16.9, height = 16.9*0.5, units = 'cm', res = 600)
+
+ggarrange(a3,b3,
+          labels = letters[1:2],font.label=list(size=8),
+          ncol = 2, nrow = 1)
+
+dev.off()
+
+
+
+### Fig 4
+# barplot of combined stability model
+dfRegStabilityNationalCombined <- data.frame(summary(modStabilityNationalCombined)$coefficients[2:7,c(1,2,4)])
+names(dfRegStabilityNationalCombined) <- c("Effect","SE","pVal")
+dfRegStabilityNationalCombined$nam <- c("Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time")
+dfRegStabilityNationalCombined$Level <- "National"
+
+dfRegStabilitySubnationalCombined <- data.frame(summary(modStabilitySubnationalCombined)$coefficients[2:7,c(1,2,4)])
+names(dfRegStabilitySubnationalCombined) <- c("Effect","SE","pVal")
+dfRegStabilitySubnationalCombined$nam <- c("Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time")
+dfRegStabilitySubnationalCombined$Level <- "Subnational"
+
+dfRegStabilityFarmCombined <- data.frame(summary(modStabilityFarmCombined)$coefficients[2:7,c(1,2,4)])
+names(dfRegStabilityFarmCombined) <- c("Effect","SE","pVal")
+dfRegStabilityFarmCombined$nam <-c("Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time")
+dfRegStabilityFarmCombined$Level <- "Farm"
+
+dfCombinedStabilityCombined <- funCombine(dfRegStabilityNationalCombined,dfRegStabilitySubnationalCombined,dfRegStabilityFarmCombined)
+dfCombinedStabilityCombined <- dfCombinedStabilityCombined[unlist(lapply(1:6,function(i)seq(i,18,6))),]
+dfTextStabilityCombined <- data.frame(xpos=sort(c(1:6-0.3,1:6,1:6+0.3)),ypos=dfCombinedStabilityCombined$labHeight,lab=dfCombinedStabilityCombined$lab,Level=dfCombinedStabilityCombined$Level)
+a4 <- funPlot(dfCombinedStabilityCombined,dfTextStabilityCombined,0.4,"Standardized regression coefficient",F)
+
+# barplot of combined yield model
+dfRegYieldNationalCombined <- data.frame(summary(modYieldNationalCombined)$coefficients[2:7,c(1,2,4)])
+names(dfRegYieldNationalCombined) <- c("Effect","SE","pVal")
+dfRegYieldNationalCombined$nam <- c("Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time")
+dfRegYieldNationalCombined$Level <- "National"
+
+dfRegYieldSubnationalCombined <- data.frame(summary(modYieldSubnationalCombined)$coefficients[2:7,c(1,2,4)])
+names(dfRegYieldSubnationalCombined) <- c("Effect","SE","pVal")
+dfRegYieldSubnationalCombined$nam <- c("Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time")
+dfRegYieldSubnationalCombined$Level <- "Subnational"
+
+dfRegYieldFarmCombined <- data.frame(summary(modYieldFarmCombined)$coefficients[2:7,c(1,2,4)])
+names(dfRegYieldFarmCombined) <- c("Effect","SE","pVal")
+dfRegYieldFarmCombined$nam <- c("Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time")
+dfRegYieldFarmCombined$Level <- "Farm"
+
+dfCombinedYieldCombined <- funCombine(dfRegYieldNationalCombined,dfRegYieldSubnationalCombined,dfRegYieldFarmCombined)
+dfCombinedYieldCombined <- dfCombinedYieldCombined[unlist(lapply(1:6,function(i)seq(i,18,6))),]
+dfTextYieldCombined <- data.frame(xpos=sort(c(1:6-0.3,1:6,1:6+0.3)),ypos=dfCombinedYieldCombined$labHeight,lab=dfCombinedYieldCombined$lab,Level=dfCombinedYieldCombined$Level)
+b4 <- funPlot(dfCombinedYieldCombined,dfTextYieldCombined,0.6,"Standardized regression coefficient",T)
+
+# plot
+jpeg("results/Fig4.jpeg", width = 16.9, height = 16.9*0.5, units = 'cm', res = 600)
+
+ggarrange(a4,b4,
+          labels = letters[1:2],font.label=list(size=8),
+          ncol = 2, nrow = 1)
+
+dev.off()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ## Fig 3: bivariate maps
@@ -504,360 +793,6 @@ dev.off()
 
 
 
-
-## read DF
-
-
-length(unique(dfGlobal$Area))
-names(dfGlobal)
-table(dfGlobal$IncomeGroup)
-
-#### 1: explore realtionship between diversity and asynchrony
-dfDiversityAsynchronyGlobal <- dfGlobal[,c("Area","timePeriod","IncomeGroup","asynchrony","diversity")]
-dfDiversityAsynchronyGlobal$timePeriod <- factor(dfDiversityAsynchronyGlobal$timePeriod,levels = c(1968,1978,1988,1998,2008))
-dfDiversityAsynchronyGlobal$IncomeGroup <- factor(dfDiversityAsynchronyGlobal$IncomeGroup,levels = c("High income","Upper middle income","Lower middle income","Low income"))
-
-cor.test(dfDiversityAsynchronyGlobal$diversity,dfDiversityAsynchronyGlobal$asynchrony,method='s')
-
-# test if correlation between diversity and asynchrony decreases over time
-modDiversityTimeGlobal <- lmer(asynchrony ~ diversity + (1+diversity|timePeriod), data = dfDiversityAsynchronyGlobal)
-modDiversityLMGlobal <- lm(asynchrony ~ diversity,data = dfDiversityAsynchronyGlobal)
-summary(modDiversityLMGlobal)
-anova(modDiversityTimeGlobal,modDiversityLMGlobal) 
-
-modDiversityTimeFixedGlobal=fixef(modDiversityTimeGlobal)
-r.squaredGLMM(modDiversityTimeGlobal) 
-modDiversityTimeGroupGlobal <-   coef(modDiversityTimeGlobal)$timePeriod
-
-## plot
-a1 <- ggplot(dfDiversityAsynchronyGlobal, aes(x=diversity, y=asynchrony, color = timePeriod)) +
-  geom_point(size=0.7) +
-  scale_colour_manual(name="Time interval",values = vecColors, labels = c("1961-1970","1971-1980","1981-1990","1991-2000","2001-2010")) +
-  scale_radius(range = c(2,12)) +
-  geom_abline(intercept = modDiversityTimeGroupGlobal[,1],slope = modDiversityTimeGroupGlobal[,2],color=vecColors)+
-  geom_abline(intercept = summary(modDiversityLMGlobal)$coefficients[1,1],slope = summary(modDiversityLMGlobal)$coefficients[2,1],color="black",linetype=3)+
-  theme_classic() +  
-  xlab("") +
-  ylab("Asynchrony") + 
-  theme(axis.title.x = element_text(size=8)) +  
-  theme(axis.text.x = element_text(size=8)) +
-  theme(axis.title.y = element_text(size=8)) +    
-  theme(axis.text.y = element_text(size=8)) +
-  theme(legend.position = c(0.8, 0.17))+
-  theme(legend.title = element_text(size = 8),
-        legend.text = element_text(size = 8)) +
-  theme(legend.key.size = unit(0.2,"cm")) + 
-  theme(plot.margin = unit(c(0.2,0.3,0.2,0.2), "cm")) 
-
-
-## test if correlation between diversity and asynchrony differs between income group
-modDiversityIncomeGlobal <- lmer(asynchrony ~ diversity + (1+diversity|IncomeGroup), data = dfDiversityAsynchronyGlobal)
-
-anova(modDiversityIncomeGlobal,modDiversityLMGlobal) 
-
-modDiversityIncomeFixedGlobal=fixef(modDiversityIncomeGlobal)
-r.squaredGLMM(modDiversityIncomeGlobal) 
-modDiversityIncomeGroupGlobal <-   coef(modDiversityIncomeGlobal)$IncomeGroup
-
-## plot
-c1 <- ggplot(dfDiversityAsynchronyGlobal, aes(x=diversity, y=asynchrony, color = IncomeGroup)) +
-  geom_point(size=0.7) +
-  scale_colour_manual(name="Income group",values = vecColors2, labels = c("High income","Upper middle income","Lower middle income","Low income")) +
-  scale_radius(range = c(2,12)) +
-  geom_abline(intercept = modDiversityIncomeGroupGlobal[,1],slope = modDiversityIncomeGroupGlobal[,2],color=vecColors2)+
-  geom_abline(intercept = summary(modDiversityLMGlobal)$coefficients[1,1],slope = summary(modDiversityLMGlobal)$coefficients[2,1],color="black",linetype=3)+
-  theme_classic() +  
-  xlab("Diversity") +
-  ylab("Asynchrony") + 
-  theme(axis.title.x = element_text(size=8)) +  
-  theme(axis.text.x = element_text(size=8)) +
-  theme(axis.title.y = element_text(size=8)) +    
-  theme(axis.text.y = element_text(size=8)) +
-  theme(legend.position = c(0.8, 0.17))+
-  theme(legend.title = element_text(size = 8),
-        legend.text = element_text(size = 8)) +
-  theme(legend.key.size = unit(0.2,"cm")) +
-  theme(plot.margin = unit(c(0.2,0.3,0.2,0.2), "cm")) 
-
-
-
-#### 2: regression analyses
-# transform variables
-dfLogGlobal=with(dfGlobal,data.frame(Area,
-                                     stability = log(stability),
-                                     diversity,
-                                     asynchrony, 
-                                     meanIrrigation_share=sqrt(meanIrrigation_share),
-                                     meanNitrogen_t_ha=sqrt(meanNitrogen_t_ha),
-                                     instabilityTemp,instabilityPrec,
-                                     meanWarfare,
-                                     timePeriod
-))
-names(dfLogGlobal)
-head(dfLogGlobal)
-
-## scale predictors for standardized regression
-dfPredictorsGlobal=sapply(dfLogGlobal[,-c(1:2)],function(x)scale(x,center = T,scale=T)[,1])
-dfCenterGlobal=data.frame(Area=dfLogGlobal[,1],stability=dfLogGlobal[,2],dfPredictorsGlobal)
-head(dfCenterGlobal)
-
-cor(dfCenterGlobal$diversity,dfCenterGlobal$asynchrony)
-
-# models
-modAsynchronyGlobal <- lm(stability~asynchrony+meanIrrigation_share+meanNitrogen_t_ha+meanWarfare+timePeriod+instabilityTemp+instabilityPrec,data=dfCenterGlobal)
-summary(modAsynchronyGlobal)
-
-modDiversityGlobal <- lm(stability~diversity+meanIrrigation_share+meanNitrogen_t_ha+meanWarfare+timePeriod+instabilityTemp+instabilityPrec,data=dfCenterGlobal)
-summary(modDiversityGlobal)
-
-modTotalGlobal <- lm(stability~diversity+asynchrony+meanIrrigation_share+meanNitrogen_t_ha+meanWarfare+timePeriod+instabilityTemp+instabilityPrec,data=dfCenterGlobal)
-summary(modTotalGlobal)
-
-# barplot of effects: combine coefficents of both modesl
-dfDiversity <- data.frame(summary(modDiversityGlobal)$coefficients)[2:8,c(1,2,4)]
-names(dfDiversity) <- c("Effect","SE","pVal")
-colnames(dfDiversity)
-dfDiversity$nam <- c("Diversity","sqrt(Irigation)","sqrt(N use intensity)","Warfare","Time","Temperature instability","Precipitation instability")
-dfDiversity <- rbind(dfDiversity[1,],data.frame(Effect=0,SE=0,pVal=NA,nam="Asynchrony"),dfDiversity[2:7,])
-dfDiversity$Model <- "Diversity"
-
-dfAsynchrony <- data.frame(summary(modAsynchronyGlobal)$coefficients)[2:8,c(1,2,4)]
-names(dfAsynchrony) <- c("Effect","SE","pVal")
-colnames(dfAsynchrony)
-dfAsynchrony$nam <- c("Asynchrony","sqrt(Irigation)","sqrt(N use intensity)","Warfare","Time","Temperature instability","Precipitation instability")
-dfAsynchrony <- rbind(data.frame(Effect=0,SE=0,pVal=NA,nam="Diversity"),dfAsynchrony)
-dfAsynchrony$Model <-  "Asynchrony"
-
-dfTotal <- data.frame(summary(modTotalGlobal)$coefficients)[2:9,c(1,2,4)]
-names(dfTotal) <- c("Effect","SE","pVal")
-colnames(dfTotal)
-dfTotal$nam <- c("Diversity","Asynchrony","sqrt(Irigation)","sqrt(N use intensity)","Warfare","Time","Temperature instability","Precipitation instability")
-dfTotal$Model <- "Combined"
-
-dfCombined <- rbind(dfDiversity,dfAsynchrony,dfTotal)
-dfCombined$Model <- factor(dfCombined$Model, levels = unique(dfCombined$Model))
-dfCombined$nam <- factor(dfCombined$nam, levels = unique(dfCombined$nam))
-dfCombined$labHeight <- dfCombined$Effect + 0.05
-dfCombined[which(dfCombined$Effect<0),"labHeight"] <- dfCombined[which(dfCombined$Effect<0),"Effect"] - 0.05
-dfCombined$lab <- ""
-dfCombined[which(dfCombined$pVal<0.05),"lab"] <- "*"
-dfCombined[which(dfCombined$pVal<0.01),"lab"] <- "**"
-dfCombined[which(dfCombined$pVal<0.001),"lab"] <- "***"
-dfCombined[which(dfCombined$pVal>=0.05),"lab"] <- "NS"
-dfCombined$lab <- factor(dfCombined$lab, levels = unique(dfCombined$lab))
-
-dfCombined <- dfCombined[unlist(lapply(1:8,function(i)seq(i,24,8))),]
-
-dfText <- data.frame(xpos=sort(c(1:8-0.3,1:8,1:8+0.3)),ypos=dfCombined$labHeight,lab=dfCombined$lab,Model=dfCombined$Model)
-
-a2 <- ggplot(data=dfCombined, aes(x=nam, y=Effect, fill=Model)) +
-  geom_bar(stat="identity", position=position_dodge())+
-  geom_errorbar(aes(ymin=Effect-SE, ymax=Effect+SE), width=.1,
-                position=position_dodge(.9)) +
-  geom_text(data=dfText,aes(x=xpos,y=ypos,label=lab),size=2)+  
-  theme_classic() +  
-  xlab("") +
-  scale_y_continuous(breaks = round(seq(-0.6,0.6, by = 0.1),1),limits=c(-0.6,0.6)) +
-  # scale_y_discrete("Standardized regression coefficient", seq(-0.3,0.3,0.1))+
-  ylab("Standardized regression coefficient") +
-  theme(axis.title.y=element_text(size=8)) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1,size=8))+
-  theme(axis.text.y = element_text(size=8))+
-  scale_fill_manual(name = "Model",values = myColors)+
-  geom_hline(yintercept=0)+
-  theme(legend.position = c(0.9, 0.8))+
-  theme(legend.title = element_text(size = 8),
-        legend.text = element_text(size = 8))+
-  theme(legend.key.size = unit(0.2,"cm")) +
-  theme(plot.margin = unit(c(0.2,0.3,-0.5,0.2), "cm")) 
-
-
-##### Europe
-
-## read DF
-dfEurope <- read.csv("datasetsDerived/dataFinal_europe.csv")
-head(dfEurope)
-
-
-
-#### 1: explore relationship between diversity and asynchrony
-dfDiversityAsynchronyEurope <- dfEurope[,c("NUTS_ID","timePeriod","Member","asynchrony","diversity")]
-dfDiversityAsynchronyEurope$timePeriod <- factor(dfDiversityAsynchronyEurope$timePeriod,levels = c(1978,1988,1998,2008))
-dfDiversityAsynchronyEurope$Member <- factor(dfDiversityAsynchronyEurope$Member,levels = c("old","new","not"))
-cor.test(dfDiversityAsynchronyEurope$diversity,dfDiversityAsynchronyEurope$asynchrony,method='s')
-
-## test if correlation between diversity and asynchrony decreases over time
-modDiversityTimeEurope <- lmer(asynchrony ~ diversity + (1+diversity|timePeriod), data = dfDiversityAsynchronyEurope)
-modDiversityLMEurope <- lm(asynchrony ~ diversity,data = dfDiversityAsynchronyEurope)
-summary(modDiversityLMEurope)
-anova(modDiversityTimeEurope,modDiversityLMEurope) 
-
-modDiversityTimeFixedEurope=fixef(modDiversityTimeEurope)
-r.squaredGLMM(modDiversityTimeEurope) 
-modDiversityTimeGroupEurope <-   coef(modDiversityTimeEurope)$timePeriod
-
-## plot
-b1 <- ggplot(dfDiversityAsynchronyEurope, aes(x=diversity, y=asynchrony, color = timePeriod)) +
-  geom_point(size=0.7) +
-  scale_colour_manual(name="Time interval",values = vecColors[2:5], labels = c("1978-1987","1988-1997","1998-2007","2008-2017")) +
-  scale_radius(range = c(2,12)) +
-  geom_abline(intercept = modDiversityTimeGroupEurope[,1],slope = modDiversityTimeGroupEurope[,2],color=vecColors[2:5])+
-  geom_abline(intercept = summary(modDiversityLMEurope)$coefficients[1,1],slope = summary(modDiversityLMEurope)$coefficients[2,1],color="black",linetype=3)+
-  theme_classic() +  
-  xlab("") +
-  ylab("") + 
-  theme(axis.title.x = element_text(size=8)) +  
-  theme(axis.text.x = element_text(size=8)) +
-  theme(axis.title.y = element_text(size=8)) +    
-  theme(axis.text.y = element_text(size=8)) +
-  # theme(legend.position = c(0.8, 0.17))+
-  # theme(legend.title = element_text(size = 8),
-  #       legend.text = element_text(size = 8)) +
-  # theme(legend.key.size = unit(0.2,"cm")) +
-  theme(legend.position = "none") +
-  theme(plot.margin = unit(c(0.2,0.3,0.2,0.2), "cm")) 
-
-## test if correlation between diversity and asynchrony differs between duration of EU membership
-modDiversityMemberEurope <- lmer(asynchrony ~ diversity + (1+diversity|Member), data = dfDiversityAsynchronyEurope)
-anova(modDiversityMemberEurope,modDiversityLMEurope) 
-
-modDiversityMemberFixedEurope=fixef(modDiversityMemberEurope)
-r.squaredGLMM(modDiversityMemberEurope) 
-modDiversityMemberGroupEurope <-   coef(modDiversityMemberEurope)$Member
-
-## plot
-d1 <- ggplot(dfDiversityAsynchronyEurope, aes(x=diversity, y=asynchrony, color = Member)) +
-  geom_point(size=0.7) +
-  scale_colour_manual(name="Membership EU",values = vecColors2[1:3], labels = c("Old","New","NA")) +
-  scale_radius(range = c(2,12)) +
-  geom_abline(intercept = modDiversityMemberGroupEurope[,1],slope = modDiversityMemberGroupEurope[,2],color=vecColors2[1:3])+
-  geom_abline(intercept = summary(modDiversityLMEurope)$coefficients[1,1],slope = summary(modDiversityLMEurope)$coefficients[2,1],color="black",linetype=3)+
-  theme_classic() +  
-  xlab("Diversity") +
-  ylab("") + 
-  theme(axis.title.x = element_text(size=8)) +  
-  theme(axis.text.x = element_text(size=8)) +
-  theme(axis.title.y = element_text(size=8)) +    
-  theme(axis.text.y = element_text(size=8)) +
-  theme(legend.position = c(0.8, 0.17))+
-  theme(legend.title = element_text(size = 8),
-        legend.text = element_text(size = 8)) +
-  theme(legend.key.size = unit(0.2,"cm")) +
-  theme(plot.margin = unit(c(0.2,0.3,0.2,0.2), "cm")) 
-
-#### 2: regression analyses
-
-# transform variables
-dfLogEurope=with(dfEurope,data.frame(NUTS_ID,
-                                     stability = log(stability),
-                                     diversity,asynchrony, 
-                                     instabilityTemp,instabilityPrec,
-                                     timePeriod
-))
-names(dfLogEurope)
-head(dfLogEurope)
-
-## scale predictors for standardized regression
-dfPredictorsEurope=sapply(dfLogEurope[,-c(1:2)],function(x)scale(x,center = T,scale=T)[,1])
-dfCenterEurope=data.frame(Area=dfLogEurope[,1],stability=dfLogEurope[,2],dfPredictorsEurope)
-head(dfCenterEurope)
-
-cor(dfCenterEurope$diversity,dfCenterEurope$asynchrony)
-cor(dfCenterEurope$stability,dfCenterEurope$asynchrony)
-
-# models
-modAsynchronyEurope <- lm(stability~asynchrony+timePeriod+instabilityTemp+instabilityPrec,data=dfCenterEurope)
-summary(modAsynchronyEurope)
-
-modDiversityEurope <- lm(stability~diversity+timePeriod+instabilityTemp+instabilityPrec,data=dfCenterEurope)
-summary(modDiversityEurope)
-
-modTotalEurope <- lm(stability~diversity+asynchrony+timePeriod+instabilityTemp+instabilityPrec,data=dfCenterEurope)
-summary(modTotalEurope)
-
-# barplot of effects: combine coefficents of both modesl
-dfDiversityEurope <- data.frame(summary(modDiversityEurope)$coefficients)[2:5,c(1,2,4)]
-names(dfDiversityEurope) <- c("Effect","SE","pVal")
-colnames(dfDiversityEurope)
-dfDiversityEurope$nam <- c("Diversity","Time","Temperature instability","Precipitation instability")
-dfDiversityEurope <- rbind(dfDiversityEurope[1,],data.frame(Effect=0,SE=0,pVal=NA,nam="Asynchrony"),dfDiversityEurope[2:4,])
-dfDiversityEurope$Model <- "Diversity"
-
-dfAsynchronyEurope <- data.frame(summary(modAsynchronyEurope)$coefficients)[2:5,c(1,2,4)]
-names(dfAsynchronyEurope) <- c("Effect","SE","pVal")
-colnames(dfAsynchronyEurope)
-dfAsynchronyEurope$nam <- c("Asynchrony","Time","Temperature instability","Precipitation instability")
-dfAsynchronyEurope <- rbind(data.frame(Effect=0,SE=0,pVal=NA,nam="Diversity"),dfAsynchronyEurope)
-dfAsynchronyEurope$Model <-  "Asynchrony"
-
-dfTotalEurope <- data.frame(summary(modTotalEurope)$coefficients)[2:6,c(1,2,4)]
-names(dfTotalEurope) <- c("Effect","SE","pVal")
-colnames(dfTotalEurope)
-dfTotalEurope$nam <- c("Diversity","Asynchrony","Time","Temperature instability","Precipitation instability")
-dfTotalEurope$Model <- "Combined"
-
-
-dfCombinedEurope <- rbind(dfDiversityEurope,dfAsynchronyEurope,dfTotalEurope)
-dfCombinedEurope$Model <- factor(dfCombinedEurope$Model, levels = unique(dfCombinedEurope$Model))
-dfCombinedEurope$nam <- factor(dfCombinedEurope$nam, levels = unique(dfCombinedEurope$nam))
-dfCombinedEurope$labHeight <- dfCombinedEurope$Effect + 0.05
-dfCombinedEurope[which(dfCombinedEurope$Effect<0),"labHeight"] <- dfCombinedEurope[which(dfCombinedEurope$Effect<0),"Effect"] - 0.05
-dfCombinedEurope$lab <- ""
-dfCombinedEurope[which(dfCombinedEurope$pVal<0.05),"lab"] <- "*"
-dfCombinedEurope[which(dfCombinedEurope$pVal<0.01),"lab"] <- "**"
-dfCombinedEurope[which(dfCombinedEurope$pVal<0.001),"lab"] <- "***"
-dfCombinedEurope[which(dfCombinedEurope$pVal>=0.05),"lab"] <- "NS"
-dfCombinedEurope$lab <- factor(dfCombinedEurope$lab, levels = unique(dfCombinedEurope$lab))
-
-dfCombinedEurope <- dfCombinedEurope[unlist(lapply(1:5,function(i)seq(i,15,5))),]
-
-dfTextEurope <- data.frame(xpos=sort(c(1:5-0.3,1:5,1:5+0.3)),ypos=dfCombinedEurope$labHeight,lab=dfCombinedEurope$lab,Model=dfCombinedEurope$Model)
-
-b2 <- ggplot(data=dfCombinedEurope, aes(x=nam, y=Effect, fill=Model)) +
-  geom_bar(stat="identity", position=position_dodge())+
-  geom_errorbar(aes(ymin=Effect-SE, ymax=Effect+SE), width=.1,
-                position=position_dodge(.9)) +
-  geom_text(data=dfTextEurope,aes(x=xpos,y=ypos,label=lab),size=2)+  
-  theme_classic() +  
-  xlab("") +
-  scale_y_continuous(breaks = round(seq(-0.6,0.6, by = 0.1),1),limits=c(-0.6,0.6)) +
-  # scale_y_discrete("Standardized regression coefficient", seq(-0.3,0.3,0.1))+
-  ylab("Standardized regression coefficient") +
-  theme(axis.title.y=element_text(size=8)) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1,size=8))+
-  theme(axis.text.y = element_text(size=8))+
-  scale_fill_manual(name = "Model",values = myColors)+
-  geom_hline(yintercept=0)+
-  # theme(legend.position = c(0.9, 0.8))+
-  # theme(legend.title = element_text(size = 8),
-  #       legend.text = element_text(size = 8))+
-  # theme(legend.key.size = unit(0.2,"cm")) +
-  theme(legend.position = "none") +
-  theme(plot.margin = unit(c(0.2,0.3,-0.5,0.2), "cm")) 
-
-
-
-
-###### SAVE FIGURES
-
-## Fig 1
-jpeg("results/Fig1.jpeg", width = 16.9, height = 16.9, units = 'cm', res = 600)
-
-ggarrange(a1,b1,c1,d1,
-          labels = letters[1:4],font.label=list(size=8),
-          ncol = 2, nrow = 2,widths =  c(1,1))
-
-dev.off()
-
-## Fig2
-jpeg("results/Fig2.jpeg", width = 16.9, height = 16.9*2/3, units = 'cm', res = 600)
-
-ggarrange(a2,b2,
-          labels = letters[1:2],font.label=list(size=8),
-          ncol = 2, nrow = 1,widths =  c(1.5,1))
-
-dev.off()
-
-
 rm(list=ls())
+
 

@@ -272,7 +272,7 @@ dfYieldCalories <- dfYieldCalories[which(dfYieldCalories$Area%in%vecKeyFinal),]
 dfProductionFullFinal <- dfProductionFullFinal[which(dfProductionFullFinal$Area%in%vecKeyFinal),]
 
 save(dfYieldCalories, file="datasetsDerived/dfYieldCalories_farm.RData")
-save(dfProductionFullFinal, file="datasetsDerived/dfProductionFullFinal_farm.RData")
+save(dfProductionFullFinal, file="P:/dfProductionFullFinal_farm.RData")
 
 
 ## aggregate for each time fame
@@ -343,7 +343,7 @@ dfAll <- dfAll[,c("Farmer","REGION_ID","timePeriod",
                         "instabilityTemp","instabilityPrec"
                         )]
 
-write.csv(dfAll,"C:/Users/egli/Nextcloud/Cloud/PhD_Leipzig/Publications/Globalization/datasetsDerived/dataFinal_farmlevel.csv",row.names=F)
+write.csv(dfAll,"P:/dataFinal_farmlevel.csv",row.names=F)
 
 
 rm(list=ls())

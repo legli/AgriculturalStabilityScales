@@ -81,17 +81,17 @@ names(dfProductionFullr)[4] <- "AreaHarvested"
 #### add calories and make crops consistent with target crop file
 dfConsistency <- read.csv("datasets/targetCrops_global.csv")
 head(dfConsistency) # Group2 is the target crop name
-
-dfConsistency <- dfConsistency[which(!is.na(dfConsistency$Group2)&!is.na(dfConsistency$Calories)),]
+names(dfConsistency)[4] <- "Crop"
+dfConsistency <- dfConsistency[which(!is.na(dfConsistency$Crop)&!is.na(dfConsistency$Calories)),]
 setdiff(sort(unique(dfConsistency[which(!is.na(dfConsistency$harvestedAreaFAO)),"harvestedAreaFAO"])),sort(unique(dfProductionFull$Item)))
 
 ## subset crops without calories
-dfProductionFullr <- merge(dfProductionFullr,dfConsistency[,c("harvestedAreaFAO","Group2","Calories")],by.x="Item",by.y="harvestedAreaFAO")
+dfProductionFullr <- merge(dfProductionFullr,dfConsistency[,c("harvestedAreaFAO","Crop","Calories")],by.x="Item",by.y="harvestedAreaFAO")
 names(dfProductionFullr)
 # change production to calories
 dfProductionFullr$Production <- dfProductionFullr$Production*dfProductionFullr$Calories
 # keep necessary columns only 
-dfProductionFullr <- dfProductionFullr[,c("Area","Group2","Year","AreaHarvested","Production")]
+dfProductionFullr <- dfProductionFullr[,c("Area","Crop","Year","AreaHarvested","Production")]
 
 
 ## make area and production consistent
@@ -127,8 +127,8 @@ dfProductionFullr[which(dfProductionFullr$Area=="United States of America"),"Are
 dfProductionFullr[which(dfProductionFullr$Area=="Venezuela (Bolivarian Republic of)"),"Area"] <- "Venezuela"
 sort(as.character(setdiff(dfProductionFullr$Area,dfCropland$Area)))
 
-nrow(unique(dfProductionFullr[,c("Area","Year","Group2")])) == nrow(dfProductionFullr) # check duplicates
-unique(dfProductionFullr[which(duplicated(dfProductionFullr[,c("Area","Year","Group2")])),"Area"])
+nrow(unique(dfProductionFullr[,c("Area","Year","Crop")])) == nrow(dfProductionFullr) # check duplicates
+unique(dfProductionFullr[which(duplicated(dfProductionFullr[,c("Area","Year","Crop")])),"Area"])
 
 
 ## reduce dataset: only include crops with at least 15 entries per region, remove 0 at the beginning and end of time series!; maximize  number of crops and years per time window
@@ -153,7 +153,7 @@ sum(is.na(dfProductionFullFinal$AreaHarvested))
 sum(is.na(dfProductionFullFinal$Production))
 
 # check number of unique crops
-length(unique(dfProductionFullFinal$Group2)) ## 131 crops
+length(unique(dfProductionFullFinal$Crop)) ## 131 crops
 
 # #### calculate yields
 sum(is.na(dfProductionFullFinal))
@@ -319,11 +319,21 @@ vecCountryFinal <- vecCountryFinal[-which(vecCountryFinal%in%c("Egypt","Korea, D
 
 
 # remove countries
-dfYieldCalories <- dfYieldCalories[which(dfYieldCalories$Area%in%vecCountryFinal),]
 dfProductionFullFinal <- dfProductionFullFinal[which(dfProductionFullFinal$Area%in%vecCountryFinal),]
+dfYieldCalories <- dfYieldCalories[which(dfYieldCalories$Area%in%vecCountryFinal),]
+dfShannon <- dfShannon[which(dfShannon$Area%in%vecCountryFinal),]
+dfCropland <- dfCropland[which(dfCropland$Area%in%vecCountryFinal),]
+dfFertilizer <- dfFertilizer[which(dfFertilizer$Area%in%vecCountryFinal),]
+dfIrrigation <- dfIrrigation[which(dfIrrigation$Area%in%vecCountryFinal),]
+dfClimateFinalr <- dfClimateFinalr[which(dfClimateFinalr$Area%in%vecCountryFinal),]
 
-save(dfYieldCalories, file="datasetsDerived/dfYieldCalories_global.RData")
 save(dfProductionFullFinal, file="datasetsDerived/dfProductionFullFinal_global.RData")
+save(dfYieldCalories, file="datasetsDerived/dfYieldCalories_global.RData")
+save(dfShannon, file="datasetsDerived/dfShannon_global.RData")
+save(dfCropland, file="datasetsDerived/dfCropland_global.RData")
+save(dfFertilizer, file="datasetsDerived/dfFertilizer_global.RData")
+save(dfIrrigation, file="datasetsDerived/dfIrrigation_global.RData")
+save(dfClimateFinalr, file="datasetsDerived/dfClimateFinalr_global.RData")
 
 ## summarize per time frame 
 lsAll <- lapply(vecCountryFinal,function(ctry){
@@ -376,9 +386,9 @@ length(unique(dfAll$Area)) ## 135 countries
 names(dfAll)
 names(dfAll)[1] <- "Country"
 dfAll <- dfAll[,c("Country","timePeriod",
-                  "stability","Yield",
+                  "stability","yield",
                   "diversity","meanNitrogen","meanIrrigation_share",
-                  "meanWarfare","instabilityTemp","instabilityPrec")]
+                  "instabilityTemp","instabilityPrec")]
 write.csv(dfAll, "datasetsDerived/dataFinal_global.csv",row.names=F)
 
 
