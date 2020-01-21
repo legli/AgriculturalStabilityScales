@@ -1,5 +1,67 @@
 
-funCombine <- function(df1,df2,df3){
+funCombinePlot <- function(mod1,mod2,namPred,tit,color,yLength,yname){
+  
+  if (!is.null(mod2))
+  {
+    dfCombined <- data.frame(rbind(
+      summary(mod1)$coefficients[2:7,c(1,2,4)],
+      summary(mod2)$coefficients[2,c(1,2,4)]
+    ))
+    vecName <- c("Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time","Area harvested") 
+  }
+
+  if (is.null(mod2))
+  {
+    dfCombined <- data.frame(
+      summary(mod1)$coefficients[2:7,c(1,2,4)]
+      )
+    vecName <- c("Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time") 
+  }
+  
+  names(dfCombined) <- c("Effect","SE","pVal")
+  dfCombined$nam <- vecName 
+
+  dfCombined$nam <- factor(dfCombined$nam, levels = unique(dfCombined$nam))
+  dfCombined$labHeight <- dfCombined$Effect + dfCombined$SE + 0.04
+  dfCombined[which(dfCombined$Effect<0),"labHeight"] <- dfCombined[which(dfCombined$Effect<0),"Effect"]- dfCombined[which(dfCombined$Effect<0),"SE"] - 0.04
+  dfCombined$lab <- ""
+  dfCombined[which(dfCombined$pVal<0.05),"lab"] <- "*"
+  dfCombined[which(dfCombined$pVal<0.01),"lab"] <- "**"
+  dfCombined[which(dfCombined$pVal<0.001),"lab"] <- "***"
+  dfCombined[which(dfCombined$pVal>=0.05),"lab"] <- "NS"
+  dfCombined$lab <- factor(dfCombined$lab, levels = unique(dfCombined$lab))
+  dfText <- data.frame(xpos=1:length(vecName),ypos=dfCombined$labHeight,lab=dfCombined$lab)
+  
+  
+  fig <- ggplot(data=dfCombined, aes(x=nam, y=Effect)) +
+    geom_bar(stat="identity", position=position_dodge(), fill=color)+
+    geom_errorbar(aes(ymin=Effect-SE, ymax=Effect+SE), width=.1,
+                  position=position_dodge(.9)) +
+    geom_text(data=dfText,aes(x=xpos,y=ypos,label=lab),size=1)+  
+    theme_classic() +  
+    xlab("") +
+    scale_y_continuous(breaks = round(seq(-yLength,yLength, by = 0.2),1),limits=c(-yLength,yLength)) +
+    ylab(yname) +
+    theme(axis.title.y=element_text(size=8)) +
+    theme(axis.text.y = element_text(size=8))+
+    geom_hline(yintercept=0,size=0)+
+    theme(plot.margin = unit(c(0.2,0.3,-0.5,0.2), "cm"))+
+    theme(legend.position = "none")+
+    ggtitle(tit)+
+    theme(plot.title = element_text(size=8))
+  if (namPred)
+  {fig <- fig + theme(axis.text.x = element_text(angle = 45, hjust = 1,size=6))}
+  if (!namPred)
+  {fig <- fig + theme(axis.text.x=element_blank())}
+  if (!is.null(mod2))
+  {
+    fig <- fig + geom_vline(xintercept=6.5,size=0)
+  }
+  fig
+}
+
+
+funCombineAll <- function(df1,df2,df3){
 
   dfCombined <- rbind(df1,df2,df3)
   dfCombined$Level <- factor(dfCombined$Level, levels = c("National","Subnational","Farm"))

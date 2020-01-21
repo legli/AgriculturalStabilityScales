@@ -48,7 +48,7 @@ dfCenterNational=data.frame(Country=dfLogNational[,1],stability=dfLogNational[,2
 head(dfCenterNational)
 
 ## regression models
-modStabilityNational <- lm(stability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterNational)
+modStabilityNational <- lm(stability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfLogNational)
 summary(modStabilityNational)
 
 modYieldNational <- lm(yield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterNational)
@@ -80,14 +80,14 @@ head(dfLogSubnational)
 
 # scale predictors for standardized regression
 dfPredictorsSubnational=sapply(dfLogSubnational[,-c(1:3)],function(x)scale(x,center = T,scale=T)[,1])
-dfCenterSubnational=data.frame(Area=dfLogSubnational[,1],ratioStability=dfLogSubnational[,2],ratioYield=dfLogSubnational[,3],dfPredictorsSubnational)
+dfCenterSubnational=data.frame(Area=dfLogSubnational[,1],stability=dfLogSubnational[,2],yield=dfLogSubnational[,3],dfPredictorsSubnational)
 head(dfCenterSubnational)
 
 # regression models
-modStabilitySubnational <- lm(ratioStability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterSubnational)
+modStabilitySubnational <- lm(stability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterSubnational)
 summary(modStabilitySubnational)
 
-modYieldSubnational <- lm(ratioYield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterSubnational)
+modYieldSubnational <- lm(yield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterSubnational)
 summary(modYieldSubnational)
 
 
@@ -131,29 +131,33 @@ summary(modYieldFarm)
 ###### National level
 ### preparation
 dfNationalScale <- read.csv("datasetsDerived/dataScales_global.csv")
-dfNationalScale <- dfNationalScale[,c("Area","timePeriod","stability","yield","prop")]
+dfNationalScale <- dfNationalScale[,c("Area","timePeriod","stability","yield","areaHarvested")]
+dfNationalScale <- unique(dfNationalScale)
 names(dfNationalScale)[1] <- "Country"
-dfNationalScaleAgg <- aggregate(cbind(stability,yield)~Country+timePeriod+prop,dfNationalScale,mean)
 
 # add original data
 dfNationalRed <- dfNational
 dfNationalRed$prop <- 0
-dfNationalScaleAgg <- rbind(dfNationalRed[,c("Country","timePeriod","stability","yield","prop")],dfNationalScaleAgg[,c("Country","timePeriod","stability","yield","prop")])
+dfNationalScaleFinal <- rbind(dfNationalRed[,c("Country","timePeriod","stability","yield","areaHarvested")],dfNationalScale[,c("Country","timePeriod","stability","yield","areaHarvested")])
 
 # remove outliers
-hist(dfNationalScaleAgg$stability)
-intOutlierNational <- which(dfNationalScaleAgg$stability%in%boxplot.stats(dfNationalScaleAgg$stability)$out)
+hist(dfNationalScaleFinal$stability)
+intOutlierNational <- which(dfNationalScaleFinal$stability%in%boxplot.stats(dfNationalScaleFinal$stability)$out)
 if (length(intOutlierNational)>0)
 {
-  dfNationalScaleAgg <- dfNationalScaleAgg[-intOutlierNational,]
+  dfNationalScaleFinal <- dfNationalScaleFinal[-intOutlierNational,]
 }
 
+dfNationalScaleFinal$Level <- "National"
+dfSubnationalScaleFinal$Level <- "Subnational"
+
+# dfNationalScaleFinal <- rbind(dfNationalScaleFinal[,c("Level","timePeriod","stability","yield","areaHarvested")],dfSubnationalScaleFinal[,c("Level","timePeriod","stability","yield","areaHarvested")])
 ### regression analyses
 ## transformations
-dfLogNationalScale=with(dfNationalScaleAgg,data.frame(Country,
+dfLogNationalScale=with(dfNationalScaleFinal,data.frame(Country,
                                         stability = log(stability),
                                         yield = log(yield),
-                                        prop, 
+                                        areaHarvested, 
                                         timePeriod
 ))
 
@@ -163,38 +167,38 @@ dfCenterNationalScale=data.frame(Country=dfLogNationalScale[,1],stability=dfLogN
 head(dfCenterNationalScale)
 
 ## regression models
-modStabilityNationalScale <- lm(stability~prop+timePeriod,dfCenterNationalScale)
+modStabilityNationalScale <- lm(stability~areaHarvested+timePeriod,dfCenterNationalScale)
 summary(modStabilityNationalScale)
 
-modYieldNationalScale <- lm(yield~prop+timePeriod,dfCenterNationalScale)
+modYieldNationalScale <- lm(yield~areaHarvested+timePeriod,dfCenterNationalScale)
 summary(modYieldNationalScale)
 
 ###### European level
 ### preparation
 dfSubnationalScale <- read.csv("datasetsDerived/dataScales_europe.csv")
-dfSubnationalScale <- dfSubnationalScale[,c("Area","timePeriod","stability","yield","prop")]
+dfSubnationalScale <- dfSubnationalScale[,c("Area","timePeriod","stability","yield","areaHarvested")]
+dfSubnationalScale <- unique(dfSubnationalScale)
 names(dfSubnationalScale)[1] <- "RegionCode"
-dfSubnationalScaleAgg <- aggregate(cbind(stability,yield)~RegionCode+timePeriod+prop,dfSubnationalScale,mean)
 
 # add original data
 dfSubnationalRed <- dfSubnational
 dfSubnationalRed$prop <- 0
-dfSubnationalScaleAgg <- rbind(dfSubnationalRed[,c("RegionCode","timePeriod","stability","yield","prop")],dfSubnationalScaleAgg[,c("RegionCode","timePeriod","stability","yield","prop")])
+dfSubnationalScaleFinal <- rbind(dfSubnationalRed[,c("RegionCode","timePeriod","stability","yield","areaHarvested")],dfSubnationalScale[,c("RegionCode","timePeriod","stability","yield","areaHarvested")])
 
 # remove outliers
-hist(dfSubnationalScaleAgg$stability)
-intOutlierSubnational <- which(dfSubnationalScaleAgg$stability%in%boxplot.stats(dfSubnationalScaleAgg$stability)$out)
+hist(dfSubnationalScale$stability)
+intOutlierSubnational <- which(dfSubnationalScale$stability%in%boxplot.stats(dfSubnationalScale$stability)$out)
 if (length(intOutlierSubnational)>0)
 {
-  dfSubnationalScaleAgg <- dfSubnationalScaleAgg[-intOutlierSubnational,]
+  dfSubnationalScale <- dfSubnationalScale[-intOutlierSubnational,]
 }
 
 ### regression analyses
 ## transformations
-dfLogSubnationalScale=with(dfSubnationalScaleAgg,data.frame(RegionCode,
+dfLogSubnationalScale=with(dfSubnationalScale,data.frame(RegionCode,
                                                       stability = log(stability),
                                                       yield = log(yield),
-                                                      prop, 
+                                                      areaHarvested, 
                                                       timePeriod
 ))
 
@@ -204,38 +208,38 @@ dfCenterSubnationalScale=data.frame(RegionCode=dfLogSubnationalScale[,1],stabili
 head(dfCenterSubnationalScale)
 
 ## regression models
-modStabilitySubnationalScale <- lm(stability~prop+timePeriod,dfCenterSubnationalScale)
+modStabilitySubnationalScale <- lm(stability~areaHarvested+timePeriod,dfCenterSubnationalScale)
 summary(modStabilitySubnationalScale)
 
-modYieldSubnationalScale <- lm(yield~prop+timePeriod,dfCenterSubnationalScale)
+modYieldSubnationalScale <- lm(yield~areaHarvested+timePeriod,dfCenterSubnationalScale)
 summary(modYieldSubnationalScale)
 
 ###### Farm level
 ### preparation
 dfFarmScale <- read.csv("datasetsDerived/dataScales_farm.csv")
-dfFarmScale <- dfFarmScale[,c("Area","timePeriod","stability","yield","prop")]
+dfFarmScale <- dfFarmScale[,c("Area","timePeriod","stability","yield","areaHarvested")]
+dfFarmScale <- unique(dfFarmScale)
 names(dfFarmScale)[1] <- "Farmer"
-dfFarmScaleAgg <- aggregate(cbind(stability,yield)~Farmer+timePeriod+prop,dfFarmScale,mean)
 
 # add original data
 dfFarmRed <- dfFarm
 dfFarmRed$prop <- 0
-dfFarmScaleAgg <- rbind(dfFarmRed[,c("Farmer","timePeriod","stability","yield","prop")],dfFarmScaleAgg[,c("Farmer","timePeriod","stability","yield","prop")])
+dfFarmScaleFinal <- rbind(dfFarmRed[,c("Farmer","timePeriod","stability","yield","areaHarvested")],dfFarmScale[,c("Farmer","timePeriod","stability","yield","areaHarvested")])
 
 # remove outliers
-hist(dfFarmScaleAgg$stability)
-intOutlierFarm <- which(dfFarmScaleAgg$stability%in%boxplot.stats(dfFarmScaleAgg$stability)$out)
+hist(dfFarmScaleFinal$stability)
+intOutlierFarm <- which(dfFarmScaleFinal$stability%in%boxplot.stats(dfFarmScaleFinal$stability)$out)
 if (length(intOutlierFarm)>0)
 {
-  dfFarmScaleAgg <- dfFarmScaleAgg[-intOutlierFarm,]
+  dfFarmScaleFinal <- dfFarmScaleFinal[-intOutlierFarm,]
 }
 
 ### regression analyses
 ## transformations
-dfLogFarmScale=with(dfFarmScaleAgg,data.frame(Farmer,
+dfLogFarmScale=with(dfFarmScaleFinal,data.frame(Farmer,
                                               stability = log(stability),
                                               yield = log(yield),
-                                              prop, 
+                                              areaHarvested, 
                                               timePeriod
 ))
 
@@ -245,10 +249,10 @@ dfCenterFarmScale=data.frame(Country=dfLogFarmScale[,1],stability=dfLogFarmScale
 head(dfCenterFarmScale)
 
 ## regression models
-modStabilityFarmScale <- lm(stability~prop+timePeriod,dfCenterFarmScale)
+modStabilityFarmScale <- lm(stability~areaHarvested+timePeriod,dfCenterFarmScale)
 summary(modStabilityFarmScale)
 
-modYieldFarmScale <- lm(yield~prop+timePeriod,dfCenterFarmScale)
+modYieldFarmScale <- lm(yield~areaHarvested+timePeriod,dfCenterFarmScale)
 summary(modYieldFarmScale)
 
 ##################### Regression combined
@@ -488,9 +492,9 @@ dev.off()
 dfPredictNational <- data.frame(diversity=rep(0,1000),instabilityTemp=0,instabilityPrec=0,irrigation=0,fertilizer=0,timePeriod=0)
 dfPredictSubnational <- data.frame(diversity=rep(0,1000),instabilityTemp=0,instabilityPrec=0,irrigation=0,fertilizer=0,timePeriod=0)
 dfPredictFarm <- data.frame(diversity=rep(0,1000),instabilityTemp=0,instabilityPrec=0,irrigation=0,fertilizer=0,timePeriod=0)
-dfPredictNationalScale <- data.frame(prop=rep(0,1000),timePeriod=0)
-dfPredictSubnationalScale <- data.frame(prop=rep(0,1000),timePeriod=0)
-dfPredictFarmScale <- data.frame(prop=rep(0,1000),timePeriod=0)
+dfPredictNationalScale <- data.frame(areaHarvested=rep(0,1000),timePeriod=0)
+dfPredictSubnationalScale <- data.frame(areaHarvested=rep(0,1000),timePeriod=0)
+dfPredictFarmScale <- data.frame(areaHarvested=rep(0,1000),timePeriod=0)
 
 dfPredictStability <- rbind(
                   funPred(dfPredictNational,dfCenterNational,dfLogNational,modStabilityNational,"diversity","National"),
@@ -499,9 +503,9 @@ dfPredictStability <- rbind(
                   )
 
 dfPredictStabilityScale <- rbind(
-  funPred(dfPredictNationalScale,dfCenterNationalScale,dfLogNationalScale,modStabilityNationalScale,"prop","National"),
-  funPred(dfPredictSubnationalScale,dfCenterSubnationalScale,dfLogSubnationalScale,modStabilitySubnationalScale,"prop","Subnational"),
-  funPred(dfPredictFarmScale,dfCenterFarmScale,dfLogFarmScale,modStabilityFarmScale,"prop","Farm")
+  funPred(dfPredictNationalScale,dfCenterNationalScale,dfLogNationalScale,modStabilityNationalScale,"areaHarvested","National"),
+  funPred(dfPredictSubnationalScale,dfCenterSubnationalScale,dfLogSubnationalScale,modStabilitySubnationalScale,"areaHarvested","Subnational"),
+  funPred(dfPredictFarmScale,dfCenterFarmScale,dfLogFarmScale,modStabilityFarmScale,"areaHarvested","Farm")
 )
 
 # yield
@@ -512,9 +516,9 @@ dfPredictYield <- rbind(
 )
 
 dfPredictYieldScale <- rbind(
-  funPred(dfPredictNationalScale,dfCenterNationalScale,dfLogNationalScale,modYieldNationalScale,"prop","National"),
-  funPred(dfPredictSubnationalScale,dfCenterSubnationalScale,dfLogSubnationalScale,modYieldSubnationalScale,"prop","Subnational"),
-  funPred(dfPredictFarmScale,dfCenterFarmScale,dfLogFarmScale,modYieldFarmScale,"prop","Farm")
+  funPred(dfPredictNationalScale,dfCenterNationalScale,dfLogNationalScale,modYieldNationalScale,"areaHarvested","National"),
+  funPred(dfPredictSubnationalScale,dfCenterSubnationalScale,dfLogSubnationalScale,modYieldSubnationalScale,"areaHarvested","Subnational"),
+  funPred(dfPredictFarmScale,dfCenterFarmScale,dfLogFarmScale,modYieldFarmScale,"areaHarvested","Farm")
 )
 
 a3 <- funPlotPred(dfPredictStability,80,"Diversity","Yield stability",T)

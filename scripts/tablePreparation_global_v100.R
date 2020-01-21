@@ -355,7 +355,7 @@ lsAll <- lapply(vecCountryFinal,function(ctry){
       dfSummary <- data.frame(Area=ctry, timePeriod= yearStart)
       dfSummary$stability <- mean(dfProductionSumCtry$Yield,na.rm=T)/sd(dfProductionSumCtry$YieldDet,na.rm=T)
       dfSummary$yield <- mean(dfProductionSumCtry$Yield,na.rm=T)
-   
+      dfSummary$areaHarvested <- mean(dfProductionSumCtry$AreaHarvested,na.rm=T)
       dfSummary$diversity <- mean(dfShannonCtry$diversity,na.rm=T)
       dfSummary$meanCropland <- mean(dfCroplandCtry$croplandArea,na.rm=T)
       dfSummary$meanNitrogen <- mean(dfFertilizerCtry$Nitrogen,na.rm=T)
@@ -386,7 +386,7 @@ length(unique(dfAll$Area)) ## 135 countries
 names(dfAll)
 names(dfAll)[1] <- "Country"
 dfAll <- dfAll[,c("Country","timePeriod",
-                  "stability","yield",
+                  "stability","yield","areaHarvested",
                   "diversity","meanNitrogen","meanIrrigation_share",
                   "instabilityTemp","instabilityPrec")]
 write.csv(dfAll, "datasetsDerived/dataFinal_global.csv",row.names=F)

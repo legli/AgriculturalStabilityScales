@@ -296,7 +296,7 @@ lsAllDet <- lapply(vecKeyFinal,function(g){
         dfSummary <- data.frame(Area=g, timePeriod= yearStart, REGION_ID=unique(dfManagementRegion$REGION_ID))
         dfSummary$stability <- mean(dfProductionSumRegion$Yield,na.rm=T)/sd(dfProductionSumRegion$YieldDet,na.rm=T)
         dfSummary$yield <- mean(dfProductionSumRegion$Yield,na.rm=T)
-        
+        dfSummary$areaHarvested <- mean(dfProductionSumRegion$AreaHarvested,na.rm=T)
         dfSummary$diversity <- mean(dfShannonRegion$diversity,na.rm=T)
         dfSummary$meanCropland <- mean(dfManagementRegion$agriculturalArea,na.rm=T)
         dfSummary$meanNitrogen <- mean(dfManagementRegion$fertilzer_costs,na.rm=T)
@@ -338,7 +338,7 @@ length(unique(dfAll$Area)) ## 4290 farmers
 ## save the dataframe 
 names(dfAll)[2] <- "Farmer"
 dfAll <- dfAll[,c("Farmer","REGION_ID","timePeriod",
-                        "stability","yield",
+                        "stability","yield","areaHarvested",
                         "diversity","meanFertilizer","meanIrrigation",
                         "instabilityTemp","instabilityPrec"
                         )]

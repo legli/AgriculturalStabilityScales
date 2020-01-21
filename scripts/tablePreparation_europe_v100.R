@@ -216,7 +216,7 @@ lsAll <- lapply(vecRegionFinal,function(g){
       dfSummary <- data.frame(Area=g, timePeriod= yearStart)
       dfSummary$stability <- mean(dfProductionSumRegion$Yield,na.rm=T)/sd(dfProductionSumRegion$YieldDet,na.rm=T)
       dfSummary$yield <- mean(dfProductionSumRegion$Yield,na.rm=T)
-      
+      dfSummary$areaHarvested <- mean(dfProductionSumRegion$AreaHarvested,na.rm=T)
       dfSummary$diversity <- mean(dfShannonRegion$diversity,na.rm=T)
       dfSummary$instabilityTemp <- -(mean(dfClimateRegion$meanTemp,na.rm=T)/sd(dfClimateRegion$meanTemp,na.rm=T))
       dfSummary$instabilityPrec <- -(mean(dfClimateRegion$meanPrec,na.rm=T)/sd(dfClimateRegion$meanPrec,na.rm=T))
@@ -237,7 +237,7 @@ sum(is.na(dfAll))
 dfAll <- na.omit(dfAll)
 # dfAll <- dfAll[which(dfAll$yield>0),]
 length(unique(dfAll$Area)) ## 180 regions
-nrow(dfAll) ## 733 data points
+nrow(dfAll) ## 433 data points
 
 
 ### add cntry code and NUTS names
@@ -272,7 +272,7 @@ dfAll <- merge(dfAll,dfCountryCodes,by="CNTR_CODE")
 ## save dataframe
 names(dfAll)
 dfAll <- dfAll[,c("NUTS_NAME","NUTS_ID","Area","CNTR_CODE","timePeriod",
-                  "stability","yield",
+                  "stability","yield","areaHarvested",
                   "diversity",
                   "instabilityTemp","instabilityPrec")]
 names(dfAll)[1:4] <- c("Region","RegionCode","Country","CountryCode")
