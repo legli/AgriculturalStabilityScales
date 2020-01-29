@@ -101,6 +101,15 @@ dfProductionFullr[which(is.na(dfProductionFullr$AreaHarvested)),"Production"] <-
 # set production to 0 where area is reported
 dfProductionFullr[which(dfProductionFullr$AreaHarvested> 0 & is.na(dfProductionFullr$Production)),"Production"] <- 0
 
+#### Setting NA for harvested data for which there is no production data and vice versa 
+dfProductionStr$Area.Harvested[is.na(dfProductionStr$Production)] <- NA
+dfProductionStr$Production[is.na(dfProductionStr$Area.Harvested)] <- NA
+dfProductionStr <- dfProductionStr[!is.na(dfProductionStr$Area.Harvested) & !is.na(dfProductionStr$Production),]
+
+#### remove zeroe areas and production
+dfProductionStr <- dfProductionStr[-which(dfProductionStr$Area.Harvested==0 |  dfProductionStr$Production==0),]
+
+
 
 # subset NA
 dfProductionFullr <- na.omit(dfProductionFullr)
