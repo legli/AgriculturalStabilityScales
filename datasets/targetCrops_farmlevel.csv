@@ -1,4 +1,4 @@
-cropTestbetrieb,cropFAO,calories,source,comment,codeTestbetrieb,FoodGroup,GrowthLength,GrowthStructure
+cropTestbetrieb,cropFAO,Calories,source,comment,codeTestbetrieb,FoodGroup,GrowthLength,GrowthStructure
 Äpfel,apples,480000,http://www.fao.org/3/x9892e/X9892e05.htm#P8217_125339,,z4200,fruit,perennial,tree
 Ackerbohnen,broad beans dry,3430000,http://www.fao.org/3/x9892e/X9892e05.htm#P8217_125325,broad beans dry better reflect FAO values than broad beens green,z4020,pulses,annual,herbaceous
 Süßkirschen,cherries,650000,http://www.fao.org/3/x9892e/X9892e05.htm#P8217_125341,,z4202,fruit,perennial,tree

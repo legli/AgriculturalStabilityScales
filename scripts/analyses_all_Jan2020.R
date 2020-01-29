@@ -22,17 +22,17 @@ source("scripts/functionsAnalyses.R")
 ###### National level
 ### preparation
 # read df
-dfNational <- read.csv("datasetsDerived/dataFinal_global.csv")
-hist(dfNational$stability)
+dfCountry <- read.csv("datasetsDerived/dataFinal_global.csv")
+hist(dfCountry$stability)
 
 ### regression analyses
 ## transformations
-dfLogNational=with(dfNational,data.frame(ISO3,
+dfLogNational=with(dfCountry,data.frame(Country,
                                   stability = log(stability),
                                   yield = log(yield),
                                   diversity, 
-                                  irrigation=sqrt(meanIrrigation_share),
-                                  fertilizer=sqrt(meanFertilizer),
+                                  irrigation=sqrt(irrigation),
+                                  fertilizer=sqrt(fertilizer),
                                   instabilityTemp,instabilityPrec,
                                   timePeriod
 ))
@@ -61,18 +61,18 @@ summary(modYieldNationalRaw)
 
 ###### SUBNATIONAL LEVEL
 ### preparation
-dfSubnational <- read.csv("datasetsDerived/dataFinal_europe.csv")
-dfSubnational <- merge(dfSubnational,dfNational[,c("Country","timePeriod","meanNitrogen","meanIrrigation_share")],by=c("Country","timePeriod"))
-hist(dfSubnational$stability)
+dfRegion <- read.csv("datasetsDerived/dataFinal_europe.csv")
+dfRegion <- merge(dfRegion,dfCountry[,c("Country","timePeriod","fertilizer","irrigation")],by=c("Country","timePeriod"))
+hist(dfRegion$stability)
 
 ### regression analyses
 ## transformations
-dfLogSubnational=with(dfSubnational,data.frame(RegionCode,
+dfLogSubnational=with(dfRegion,data.frame(Region,
                                   stability = log(stability),
                                   yield = log(yield),
                                   diversity, 
-                                  irrigation=sqrt(meanIrrigation_share),
-                                  fertilizer=sqrt(meanNitrogen),                                  
+                                  irrigation=sqrt(irrigation),
+                                  fertilizer=sqrt(fertilizer),                                  
                                   instabilityTemp,instabilityPrec,
                                   timePeriod
 ))
@@ -103,12 +103,12 @@ hist(dfFarm$stability)
 
 ### regression analyses
 ## transformations
-dfLogFarm=with(dfFarm,data.frame(Farmer,
+dfLogFarm=with(dfFarm,data.frame(Farm,
                                   stability = log(stability),
                                   yield = log(yield),
                                   diversity,
-                                  irrigation=sqrt(meanIrrigation),
-                                  fertilizer=sqrt(meanFertilizer),
+                                  irrigation=sqrt(irrigation),
+                                  fertilizer=sqrt(fertilizer),
                                   instabilityTemp,instabilityPrec,
                                   timePeriod
 ))
@@ -134,21 +134,21 @@ summary(modYieldFarmRaw)
 ##################### Regression scale
 ###### National level
 ### preparation
-dfNationalScale <- read.csv("datasetsDerived/dataScales_global.csv")
-dfNationalScale <- dfNationalScale[,c("Area","timePeriod","stability","yield","areaHarvested","prop")]
-dfNationalScale <- unique(dfNationalScale)
-names(dfNationalScale)[1] <- "Country"
+dfCountryScale <- read.csv("datasetsDerived/dataScales_global.csv")
+dfCountryScale <- dfCountryScale[,c("Area","timePeriod","stability","yield","areaHarvested","prop")]
+dfCountryScale <- unique(dfCountryScale)
+names(dfCountryScale)[1] <- "Country"
 
 # add original data
-dfNationalRed <- dfNational
-dfNationalRed$prop <- 0
-dfNationalScaleFinal <- rbind(dfNationalRed[,c("Country","timePeriod","stability","yield","areaHarvested")],dfNationalScale[,c("Country","timePeriod","stability","yield","areaHarvested")])
+dfCountryRed <- dfCountry
+dfCountryRed$prop <- 0
+dfCountryScaleFinal <- rbind(dfCountryRed[,c("Country","timePeriod","stability","yield","areaHarvested")],dfCountryScale[,c("Country","timePeriod","stability","yield","areaHarvested")])
 # change area harvested to mio ha
-dfNationalScaleFinal$areaHarvested <- dfNationalScaleFinal$areaHarvested/1000000
+dfCountryScaleFinal$areaHarvested <- dfCountryScaleFinal$areaHarvested/1000000
 
 ### regression analyses
 ## transformations
-dfLogNationalScale=with(dfNationalScaleFinal,data.frame(Country,
+dfLogNationalScale=with(dfCountryScaleFinal,data.frame(Country,
                                         stability = log(stability),
                                         yield = log(yield),
                                         areaHarvested, 
@@ -173,21 +173,21 @@ summary(modYieldNationalScaleRaw)
 
 ###### European level
 ### preparation
-dfSubnationalScale <- read.csv("datasetsDerived/dataScales_europe.csv")
-dfSubnationalScale <- dfSubnationalScale[,c("Area","timePeriod","stability","yield","areaHarvested","prop")]
-dfSubnationalScale <- unique(dfSubnationalScale)
-names(dfSubnationalScale)[1] <- "RegionCode"
+dfRegionScale <- read.csv("datasetsDerived/dataScales_europe.csv")
+dfRegionScale <- dfRegionScale[,c("Area","timePeriod","stability","yield","areaHarvested","prop")]
+dfRegionScale <- unique(dfRegionScale)
+names(dfRegionScale)[1] <- "RegionCode"
 
 # add original data
-dfSubnationalRed <- dfSubnational
-dfSubnationalRed$prop <- 0
-dfSubnationalScaleFinal <- rbind(dfSubnationalRed[,c("RegionCode","timePeriod","stability","yield","areaHarvested")],dfSubnationalScale[,c("RegionCode","timePeriod","stability","yield","areaHarvested")])
+dfRegionRed <- dfRegion
+dfRegionRed$prop <- 0
+dfRegionScaleFinal <- rbind(dfRegionRed[,c("RegionCode","timePeriod","stability","yield","areaHarvested")],dfRegionScale[,c("RegionCode","timePeriod","stability","yield","areaHarvested")])
 # change area harvested to mio ha
-dfSubnationalScaleFinal$areaHarvested <- dfSubnationalScaleFinal$areaHarvested/1000000
+dfRegionScaleFinal$areaHarvested <- dfRegionScaleFinal$areaHarvested/1000000
 
 ### regression analyses
 ## transformations
-dfLogSubnationalScale=with(dfSubnationalScaleFinal,data.frame(RegionCode,
+dfLogSubnationalScale=with(dfRegionScaleFinal,data.frame(RegionCode,
                                                       stability = log(stability),
                                                       yield = log(yield),
                                                       areaHarvested, 
@@ -254,15 +254,15 @@ summary(modYieldFarmScaleRaw)
 ### preparation
 
 # get extremes
-dfNationalCombined <- merge(dfNationalRed,dfNationalScale[which(dfNationalScale$prop==1),],by=c("Country","timePeriod"))
-head(dfNationalCombined)
-dfNationalCombined$slopeStability <- dfNationalCombined$stability.y/dfNationalCombined$stability.x
-sum(dfNationalCombined$timePeriod==2008&dfNationalCombined$slopeStability<1)/sum(dfNationalCombined$timePeriod==2008)
-dfNationalCombined$slopeYield <- dfNationalCombined$yield.y/dfNationalCombined$yield.x
+dfCountryCombined <- merge(dfCountryRed,dfCountryScale[which(dfCountryScale$prop==1),],by=c("Country","timePeriod"))
+head(dfCountryCombined)
+dfCountryCombined$slopeStability <- dfCountryCombined$stability.y/dfCountryCombined$stability.x
+sum(dfCountryCombined$timePeriod==2008&dfCountryCombined$slopeStability<1)/sum(dfCountryCombined$timePeriod==2008)
+dfCountryCombined$slopeYield <- dfCountryCombined$yield.y/dfCountryCombined$yield.x
 
 ### regression analyses
 ## transformations
-dfLogNationalCombined=with(dfNationalCombined,data.frame(Country,
+dfLogNationalCombined=with(dfCountryCombined,data.frame(Country,
                                          slopeStability = log(slopeStability),
                                          slopeYield = log(slopeYield),
                                          diversity, 
@@ -292,15 +292,15 @@ summary(modYieldNationalCombinedRaw)
 ### preparation
 
 # get extremes
-dfSubnationalCombined <- merge(dfSubnationalRed,dfSubnationalScale[which(dfSubnationalScale$prop==1),],by=c("RegionCode","timePeriod"))
-head(dfSubnationalCombined)
-dfSubnationalCombined$slopeStability <- dfSubnationalCombined$stability.y/dfSubnationalCombined$stability.x
-sum(dfSubnationalCombined$timePeriod==2008&dfSubnationalCombined$slopeStability<1)/sum(dfSubnationalCombined$timePeriod==2008)
-dfSubnationalCombined$slopeYield <- dfSubnationalCombined$yield.y/dfSubnationalCombined$yield.x
+dfRegionCombined <- merge(dfRegionRed,dfRegionScale[which(dfRegionScale$prop==1),],by=c("RegionCode","timePeriod"))
+head(dfRegionCombined)
+dfRegionCombined$slopeStability <- dfRegionCombined$stability.y/dfRegionCombined$stability.x
+sum(dfRegionCombined$timePeriod==2008&dfRegionCombined$slopeStability<1)/sum(dfRegionCombined$timePeriod==2008)
+dfRegionCombined$slopeYield <- dfRegionCombined$yield.y/dfRegionCombined$yield.x
 
 ### regression analyses
 ## transformations
-dfLogSubnationalCombined=with(dfSubnationalCombined,data.frame(Country,
+dfLogSubnationalCombined=with(dfRegionCombined,data.frame(Country,
                                                          slopeStability = log(slopeStability),
                                                          slopeYield = log(slopeYield),
                                                          diversity, 
@@ -567,27 +567,27 @@ plot(mapNational)
 mapNational$Area <- as.character(mapNational$Area)
 
 # aggregate ratios
-sum(is.na(dfNational))
-dfNationalMean <- aggregate(cbind(ratioStability,ratioYield)~Country,dfNational,mean)
-head(dfNationalMean)
-dfNationalState <- aggregate(dfNational[,c("benefitStability","benefitYield")],list(dfNational$Country),function(i){sum(as.character(i)=="winner")/length(i)})
-dfNationalMap <- merge(dfNationalMean,dfNationalState,by.x="Country",by.y="Group.1")
-dfNationalMap$id <- as.character(dfNationalMap$Country)
-head(dfNationalMap)
+sum(is.na(dfCountry))
+dfCountryMean <- aggregate(cbind(ratioStability,ratioYield)~Country,dfCountry,mean)
+head(dfCountryMean)
+dfCountryState <- aggregate(dfCountry[,c("benefitStability","benefitYield")],list(dfCountry$Country),function(i){sum(as.character(i)=="winner")/length(i)})
+dfCountryMap <- merge(dfCountryMean,dfCountryState,by.x="Country",by.y="Group.1")
+dfCountryMap$id <- as.character(dfCountryMap$Country)
+head(dfCountryMap)
 
-trintStabilityNational <- as.numeric(quantile(dfNationalMap$ratioStability,probs=seq(0,1,length.out = 4)))
-trintYieldNational <- as.numeric(quantile(dfNationalMap$ratioYield,probs=seq(0,1,length.out = 4)))
+trintStabilityNational <- as.numeric(quantile(dfCountryMap$ratioStability,probs=seq(0,1,length.out = 4)))
+trintYieldNational <- as.numeric(quantile(dfCountryMap$ratioYield,probs=seq(0,1,length.out = 4)))
 
-dfNationalMap$dim1 <-car::recode(dfNationalMap$ratioStability,"trintStabilityNational[1]:trintStabilityNational[2]=1; trintStabilityNational[2]:trintStabilityNational[3]=2; trintStabilityNational[3]:trintStabilityNational[4]=3;")
-dfNationalMap$dim2 <-car::recode(dfNationalMap$ratioYield,"trintYieldNational[1]:trintYieldNational[2]=1; trintYieldNational[2]:trintYieldNational[3]=2; trintYieldNational[3]:trintYieldNational[4]=3;")
-dfNationalMap <- merge(dfNationalMap[,c("id","benefitStability","benefitYield","dim1","dim2")],grd,by=c("dim1","dim2"))
-dfNationalMap$dim1 <-car::recode(dfNationalMap$benefitStability,"0:(1/3)=1; (1/3):(2/3)=2; (2/3):1=3;")
-dfNationalMap$dim2 <-car::recode(dfNationalMap$benefitYield,"0:(1/3)=1; (1/3):(2/3)=2; (2/3):1=3;")
-dfNationalMap <- merge(dfNationalMap[,c("id","color","dim1","dim2")],grd,by=c("dim1","dim2"))
-names(dfNationalMap)[4:5] <- c("colorMean","colorState")
+dfCountryMap$dim1 <-car::recode(dfCountryMap$ratioStability,"trintStabilityNational[1]:trintStabilityNational[2]=1; trintStabilityNational[2]:trintStabilityNational[3]=2; trintStabilityNational[3]:trintStabilityNational[4]=3;")
+dfCountryMap$dim2 <-car::recode(dfCountryMap$ratioYield,"trintYieldNational[1]:trintYieldNational[2]=1; trintYieldNational[2]:trintYieldNational[3]=2; trintYieldNational[3]:trintYieldNational[4]=3;")
+dfCountryMap <- merge(dfCountryMap[,c("id","benefitStability","benefitYield","dim1","dim2")],grd,by=c("dim1","dim2"))
+dfCountryMap$dim1 <-car::recode(dfCountryMap$benefitStability,"0:(1/3)=1; (1/3):(2/3)=2; (2/3):1=3;")
+dfCountryMap$dim2 <-car::recode(dfCountryMap$benefitYield,"0:(1/3)=1; (1/3):(2/3)=2; (2/3):1=3;")
+dfCountryMap <- merge(dfCountryMap[,c("id","color","dim1","dim2")],grd,by=c("dim1","dim2"))
+names(dfCountryMap)[4:5] <- c("colorMean","colorState")
 
 mapsBivariateNational <- fortify(mapNational,region="Area")
-mapsBivariateNational = join(mapsBivariateNational, dfNationalMap[,c("id","colorMean","colorState")], by="id")
+mapsBivariateNational = join(mapsBivariateNational, dfCountryMap[,c("id","colorMean","colorState")], by="id")
 
 a3 <- ggplot() +
   geom_map(data = mapsBivariateNational, map = mapsBivariateNational,
@@ -611,27 +611,27 @@ plot(mapSubnational)
 mapSubnational$NUTS_ID <- as.character(mapSubnational$NUTS_ID)
 
 # aggregate ratios
-sum(is.na(dfSubnational))
-dfSubnationalMean <- aggregate(cbind(ratioStability,ratioYield)~RegionCode,dfSubnational,mean)
-head(dfSubnationalMean)
-dfSubnationalState <- aggregate(dfSubnational[,c("benefitStability","benefitYield")],list(dfSubnational$RegionCode),function(i){sum(as.character(i)=="winner")/length(i)})
-dfSubnationalMap <- merge(dfSubnationalMean,dfSubnationalState,by.x="RegionCode",by.y="Group.1")
-dfSubnationalMap$id <- as.character(dfSubnationalMap$RegionCode)
-head(dfSubnationalMap)
+sum(is.na(dfRegion))
+dfRegionMean <- aggregate(cbind(ratioStability,ratioYield)~RegionCode,dfRegion,mean)
+head(dfRegionMean)
+dfRegionState <- aggregate(dfRegion[,c("benefitStability","benefitYield")],list(dfRegion$RegionCode),function(i){sum(as.character(i)=="winner")/length(i)})
+dfRegionMap <- merge(dfRegionMean,dfRegionState,by.x="RegionCode",by.y="Group.1")
+dfRegionMap$id <- as.character(dfRegionMap$RegionCode)
+head(dfRegionMap)
 
-trintStabilitySubnational <- as.numeric(quantile(dfSubnationalMap$ratioStability,probs=seq(0,1,length.out = 4)))
-trintYieldSubnational <- as.numeric(quantile(dfSubnationalMap$ratioYield,probs=seq(0,1,length.out = 4)))
+trintStabilitySubnational <- as.numeric(quantile(dfRegionMap$ratioStability,probs=seq(0,1,length.out = 4)))
+trintYieldSubnational <- as.numeric(quantile(dfRegionMap$ratioYield,probs=seq(0,1,length.out = 4)))
 
-dfSubnationalMap$dim1 <-car::recode(dfSubnationalMap$ratioStability,"trintStabilitySubnational[1]:trintStabilitySubnational[2]=1; trintStabilitySubnational[2]:trintStabilitySubnational[3]=2; trintStabilitySubnational[3]:trintStabilitySubnational[4]=3;")
-dfSubnationalMap$dim2 <-car::recode(dfSubnationalMap$ratioYield,"trintYieldSubnational[1]:trintYieldSubnational[2]=1; trintYieldSubnational[2]:trintYieldSubnational[3]=2; trintYieldSubnational[3]:trintYieldSubnational[4]=3;")
-dfSubnationalMap <- merge(dfSubnationalMap[,c("id","benefitStability","benefitYield","dim1","dim2")],grd,by=c("dim1","dim2"))
-dfSubnationalMap$dim1 <-car::recode(dfSubnationalMap$benefitStability,"0:(1/3)=1; (1/3):(2/3)=2; (2/3):1=3;")
-dfSubnationalMap$dim2 <-car::recode(dfSubnationalMap$benefitYield,"0:(1/3)=1; (1/3):(2/3)=2; (2/3):1=3;")
-dfSubnationalMap <- merge(dfSubnationalMap[,c("id","color","dim1","dim2")],grd,by=c("dim1","dim2"))
-names(dfSubnationalMap)[4:5] <- c("colorMean","colorState")
+dfRegionMap$dim1 <-car::recode(dfRegionMap$ratioStability,"trintStabilitySubnational[1]:trintStabilitySubnational[2]=1; trintStabilitySubnational[2]:trintStabilitySubnational[3]=2; trintStabilitySubnational[3]:trintStabilitySubnational[4]=3;")
+dfRegionMap$dim2 <-car::recode(dfRegionMap$ratioYield,"trintYieldSubnational[1]:trintYieldSubnational[2]=1; trintYieldSubnational[2]:trintYieldSubnational[3]=2; trintYieldSubnational[3]:trintYieldSubnational[4]=3;")
+dfRegionMap <- merge(dfRegionMap[,c("id","benefitStability","benefitYield","dim1","dim2")],grd,by=c("dim1","dim2"))
+dfRegionMap$dim1 <-car::recode(dfRegionMap$benefitStability,"0:(1/3)=1; (1/3):(2/3)=2; (2/3):1=3;")
+dfRegionMap$dim2 <-car::recode(dfRegionMap$benefitYield,"0:(1/3)=1; (1/3):(2/3)=2; (2/3):1=3;")
+dfRegionMap <- merge(dfRegionMap[,c("id","color","dim1","dim2")],grd,by=c("dim1","dim2"))
+names(dfRegionMap)[4:5] <- c("colorMean","colorState")
 
 mapsBivariateSubnational <- fortify(mapSubnational,region="NUTS_ID")
-mapsBivariateSubnational = join(mapsBivariateSubnational, dfSubnationalMap[,c("id","colorMean","colorState")], by="id")
+mapsBivariateSubnational = join(mapsBivariateSubnational, dfRegionMap[,c("id","colorMean","colorState")], by="id")
 
 b3 <- ggplot() +
   geom_map(data = mapsBivariateSubnational, map = mapsBivariateSubnational,

@@ -7,38 +7,38 @@ library(rworldmap)
 ######## DATA PREPARATION
 
 #### currently exisiting regions  
-regionMap <- getMap()
-plot(regionMap)
-vecRegion <- regionMap@data$ISO3 
+levelMap <- getMap()
+plot(levelMap)
+vecLevel <- levelMap@data$ISO3 
 
 #### cropland data
 dfCropland <- read.csv("datasets/cropland_global.csv")
 # adapt region names
-dfCropland$ISO3 <- countrycode(dfCropland$Area, 'country.name', 'iso3c') # Swaziland missing
+dfCropland$Level <- countrycode(dfCropland$Area, 'country.name', 'iso3c') # Swaziland missing
 levels(dfCropland$Area) <- c(levels(dfCropland$Area),"Swaziland")
 dfCropland[which(grepl("Eswatini",dfCropland$Area)),"Area"] <- "Swaziland"
-dfCropland$ISO3 <- countrycode(dfCropland$Area, 'country.name', 'iso3c') # no important regions missing
+dfCropland$Level <- countrycode(dfCropland$Area, 'country.name', 'iso3c') # no important regions missing
 dfCropland<-dfCropland[which(dfCropland$Area!="China, mainland"),]
-sort(as.character(setdiff(vecRegion,dfCropland$ISO3)))
-dfCropland <- dfCropland[which(dfCropland$ISO3%in%vecRegion),] # only keep current regions
+sort(as.character(setdiff(vecLevel,dfCropland$Level)))
+dfCropland <- dfCropland[which(dfCropland$Level%in%vecLevel),] # only keep current regions
 
 # keep necessary columns
-dfCropland <- dfCropland[,c("ISO3","Year","Value")]
+dfCropland <- dfCropland[,c("Level","Year","Value")]
 dfCropland$croplandArea <- dfCropland$Value*1000 # convert to ha
-dfCropland <- dfCropland[,c("ISO3","Year","croplandArea")]
+dfCropland <- dfCropland[,c("Level","Year","croplandArea")]
 
 # only keep the regions covering 99.9% of the total cropland area 
 sum(is.na(dfCropland))
-dfCroplandMean <- aggregate(croplandArea~ISO3,dfCropland,mean)
+dfCroplandMean <- aggregate(croplandArea~Level,dfCropland,mean)
 head(dfCroplandMean)
 dfCroplandMean$propArea <- dfCroplandMean$croplandArea/sum(dfCroplandMean$croplandArea)
 dfCroplandMean <- dfCroplandMean[order(dfCroplandMean$propArea,decreasing = T),]
 dfCroplandMean$cumArea <- cumsum(dfCroplandMean$propArea)
 ind <- which(dfCroplandMean$cumArea>=0.999)[1]
-dfCropland <- dfCropland[which(dfCropland$ISO3%in%dfCroplandMean[1:ind,"ISO3"]),] # this are the target regions
-vecRegion <- unique(dfCropland$ISO3)
+dfCropland <- dfCropland[which(dfCropland$Level%in%dfCroplandMean[1:ind,"Level"]),] # this are the target regions
+vecLevel <- unique(dfCropland$Level)
 
-nrow(unique(dfCropland[,c("ISO3","Year")])) == nrow(dfCropland) # check duplicates
+nrow(unique(dfCropland[,c("Level","Year")])) == nrow(dfCropland) # check duplicates
 
 
 #### agricultural production data
@@ -46,13 +46,13 @@ dfProduction <- read.csv("datasets/agriculturalProduction_global.csv")
 names(dfProduction)
 
 # adapt region names
-dfProduction$ISO3 <- countrycode(dfProduction$Area, 'country.name', 'iso3c') # Swaziland missing
+dfProduction$Level <- countrycode(dfProduction$Area, 'country.name', 'iso3c') # Swaziland missing
 levels(dfProduction$Area) <- c(levels(dfProduction$Area),"Swaziland")
 dfProduction[which(grepl("Eswatini",dfProduction$Area)),"Area"] <- "Swaziland"
-dfProduction$ISO3 <- countrycode(dfProduction$Area, 'country.name', 'iso3c') # no important regions missing
+dfProduction$Level <- countrycode(dfProduction$Area, 'country.name', 'iso3c') # no important regions missing
 dfProduction<-dfProduction[which(dfProduction$Area!="China, mainland"),]
-sort(as.character(setdiff(vecRegion,dfProduction$ISO3)))
-dfProduction <- dfProduction[which(dfProduction$ISO3%in%vecRegion),] # only keep current regions
+sort(as.character(setdiff(vecLevel,dfProduction$Level)))
+dfProduction <- dfProduction[which(dfProduction$Level%in%vecLevel),] # only keep current regions
 
 # only keep area harvested and production, relevant columns and target years
 names(dfProduction)
@@ -73,7 +73,7 @@ names(dfProduction)[4] <- "AreaHarvested"
 
 # set NA for harvested data for which there is no production data and vice versa 
 dfProduction[is.na(dfProduction$Production),"AreaHarvested"] <- NA
-dfProduction[is.na(dfProduction$Area.Harvested),"Production"] <- NA
+dfProduction[is.na(dfProduction$AreaHarvested),"Production"] <- NA
 dfProduction <- dfProduction[which(!is.na(dfProduction$AreaHarvested) & !is.na(dfProduction$Production)),]
 # remove zero areas and production
 dfProduction <- dfProduction[-which(dfProduction$AreaHarvested==0 |  dfProduction$Production==0),]
@@ -97,7 +97,7 @@ hist(dfProduction$Yield)
 dfProduction<-dfProduction[dfProduction$Yield<1e+08,]
 
 # keep necessary columns only 
-dfProduction <- dfProduction[,c("ISO3","Item","Year","AreaHarvested","Production")]
+dfProduction <- dfProduction[,c("Level","Item","Year","AreaHarvested","Production")]
 
 # Remove Spices, nes and onions dry 
 dfProduction<-dfProduction[-which(dfProduction$Item%in%c("Spices, nes","Onions, dry")),]
@@ -112,29 +112,29 @@ dfProduction[dfProduction$Year%in%c(2008:2017),"timePeriod"] = 2008
 
 sum(is.na(dfProduction))
 dfProduction$sum <- 1
-dfCount <- aggregate(sum~ISO3+timePeriod+Item,dfProduction,sum)
+dfCount <- aggregate(sum~Level+timePeriod+Item,dfProduction,sum)
 head(dfCount)
 
-dfProduction <- merge(dfProduction[,c("ISO3","Item","Year","AreaHarvested","Production","timePeriod")],dfCount)
-dfProduction <- dfProduction[which(dfProduction$sum==10),c("ISO3","Item","Year","AreaHarvested","Production")]
+dfProduction <- merge(dfProduction[,c("Level","Item","Year","AreaHarvested","Production","timePeriod")],dfCount)
+dfProduction <- dfProduction[which(dfProduction$sum==10),c("Level","Item","Year","AreaHarvested","Production")]
 length(unique(dfProduction$Item)) ## 130 crops
 
-nrow(unique(dfProduction[,c("ISO3","Year","Item")])) == nrow(dfProduction) # check duplicates
+nrow(unique(dfProduction[,c("Level","Year","Item")])) == nrow(dfProduction) # check duplicates
 
 #### calculate yields
 sum(is.na(dfProduction))
-dfYield <- aggregate(cbind(Production,AreaHarvested)~ISO3+Year,dfProduction,sum)
+dfYield <- aggregate(cbind(Production,AreaHarvested)~Level+Year,dfProduction,sum)
 head(dfYield)
 dfYield$Yield <- dfYield$Production/dfYield$AreaHarvested
-nrow(unique(dfYield[,c("ISO3","Year")])) == nrow(dfYield) # check duplicates
+nrow(unique(dfYield[,c("Level","Year")])) == nrow(dfYield) # check duplicates
 
 
 #### calculate effective diversity (exp of shannon)
-dfShannon <- aggregate(AreaHarvested~ISO3+Year,dfProduction,function(x){exp(diversity(x,index="shannon"))})
+dfShannon <- aggregate(AreaHarvested~Level+Year,dfProduction,function(x){exp(diversity(x,index="shannon"))})
 head(dfShannon)
 names(dfShannon)[3] <- "diversity"
 nrow(dfShannon)==nrow(dfYield)
-nrow(unique(dfShannon[,c("ISO3","Year")])) == nrow(dfShannon) # check duplicates
+nrow(unique(dfShannon[,c("Level","Year")])) == nrow(dfShannon) # check duplicates
 
 
 #### Fertilizer data
@@ -151,18 +151,17 @@ head(dfFertilizer)
 dfFertilizer <- dfFertilizer[which(dfFertilizer$Year%in%1968:2017),]
 
 # adapt region names
-dfFertilizer$ISO3 <- countrycode(dfFertilizer$Area, 'country.name', 'iso3c') # Swaziland missing
+dfFertilizer$Level <- countrycode(dfFertilizer$Area, 'country.name', 'iso3c') # Swaziland missing
 levels(dfFertilizer$Area) <- c(levels(dfFertilizer$Area),"Swaziland")
 dfFertilizer[which(grepl("Eswatini",dfFertilizer$Area)),"Area"] <- "Swaziland"
-dfFertilizer$ISO3 <- countrycode(dfFertilizer$Area, 'country.name', 'iso3c') # no important regions missing
+dfFertilizer$Level <- countrycode(dfFertilizer$Area, 'country.name', 'iso3c') # no important regions missing
 dfFertilizer<-dfFertilizer[which(dfFertilizer$Area!="China, mainland"),]
-sort(as.character(setdiff(vecRegion,dfFertilizer$ISO3)))
-dfFertilizer <- dfFertilizer[which(dfFertilizer$ISO3%in%vecRegion),] # only keep current regions
+sort(as.character(setdiff(vecLevel,dfFertilizer$Level)))
+dfFertilizer <- dfFertilizer[which(dfFertilizer$Level%in%vecLevel),] # only keep current regions
 
 # target columns
-dfFertilizer <- dfFertilizer[,c("ISO3","Year","Nitrogen")]
-
-nrow(unique(dfFertilizer[,c("ISO3","Year")])) == nrow(dfFertilizer) # check duplicates
+dfFertilizer <- dfFertilizer[,c("Level","Year","Nitrogen")]
+nrow(unique(dfFertilizer[,c("Level","Year")])) == nrow(dfFertilizer) # check duplicates
 
 
 ## Irrigation
@@ -173,18 +172,18 @@ head(dfIrrigation)
 dfIrrigation <- dfIrrigation[which(dfIrrigation$Year%in%1968:2017),]
 
 # adapt region names
-dfIrrigation$ISO3 <- countrycode(dfIrrigation$Area, 'country.name', 'iso3c') # Swaziland missing
+dfIrrigation$Level <- countrycode(dfIrrigation$Area, 'country.name', 'iso3c') # Swaziland missing
 levels(dfIrrigation$Area) <- c(levels(dfIrrigation$Area),"Swaziland")
 dfIrrigation[which(grepl("Eswatini",dfIrrigation$Area)),"Area"] <- "Swaziland"
-dfIrrigation$ISO3 <- countrycode(dfIrrigation$Area, 'country.name', 'iso3c') # no important regions missing
+dfIrrigation$Level <- countrycode(dfIrrigation$Area, 'country.name', 'iso3c') # no important regions missing
 dfIrrigation<-dfIrrigation[which(dfIrrigation$Area!="China, mainland"),]
-sort(as.character(setdiff(vecRegion,dfIrrigation$ISO3)))
-dfIrrigation <- dfIrrigation[which(dfIrrigation$ISO3%in%vecRegion),] # only keep current regions
+sort(as.character(setdiff(vecLevel,dfIrrigation$Level)))
+dfIrrigation <- dfIrrigation[which(dfIrrigation$Level%in%vecLevel),] # only keep current regions
 names(dfIrrigation)[12] <- "Irrigation"
 
 # target columns
-dfIrrigation <- dfIrrigation[,c("ISO3","Year","Irrigation")]
-nrow(unique(dfIrrigation[,c("ISO3","Year")])) == nrow(dfIrrigation) # check duplicates
+dfIrrigation <- dfIrrigation[,c("Level","Year","Irrigation")]
+nrow(unique(dfIrrigation[,c("Level","Year")])) == nrow(dfIrrigation) # check duplicates
 
 
 #### Climate
@@ -253,57 +252,53 @@ head(dfClimateFinal)
 nrow(dfClimateFinal)
 
 # adapt region names
-dfClimateFinal$ISO3 <- countrycode(dfClimateFinal$Area, 'country.name', 'iso3c') # no important regions missing
+dfClimateFinal$Level <- countrycode(dfClimateFinal$Area, 'country.name', 'iso3c') # no important regions missing
 dfClimateFinal<-dfClimateFinal[which(dfClimateFinal$Area!="China, mainland"),]
-sort(as.character(setdiff(vecRegion,dfClimateFinal$ISO3)))
-dfClimateFinal <- dfClimateFinal[which(dfClimateFinal$ISO3%in%vecRegion),] # only keep current regions
+sort(as.character(setdiff(vecLevel,dfClimateFinal$Level)))
+dfClimateFinal <- dfClimateFinal[which(dfClimateFinal$Level%in%vecLevel),] # only keep current regions
 
 # target columns
-dfClimateFinal <- dfClimateFinal[,c("ISO3","Year","meanTemp","meanPrec")]
-nrow(unique(dfClimateFinal[,c("ISO3","Year")])) == nrow(dfClimateFinal) # check duplicates
+dfClimateFinal <- dfClimateFinal[,c("Level","Year","meanTemp","meanPrec")]
+nrow(unique(dfClimateFinal[,c("Level","Year")])) == nrow(dfClimateFinal) # check duplicates
 
 
 
 
-######## CALCULATE VARIABLE FOR THE 5 TIME PERIOS
+######## CALCULATE VARIABLES FOR THE 5 TIME PERIOS
 
 # get regions across datasets
-vecCRegionFinal <- Reduce(intersect,list(dfCropland$ISO3,dfProduction$ISO3,dfYield$ISO3,dfShannon$ISO3,dfFertilizer$ISO3,dfIrrigation$ISO3,dfClimateFinal$ISO3))
+vecLevelFinal <- Reduce(intersect,list(dfCropland$Level,dfProduction$Level,dfYield$Level,dfShannon$Level,dfFertilizer$Level,dfIrrigation$Level,dfClimateFinal$Level))
 
 # remove countries listed by Renard & Tilman 2019
-vecCRegionFinal <- vecCRegionFinal[-which(vecCRegionFinal%in%c("EGY","PRK", "GIN", "KEN","MOZ","ZMB","IRL","NLD","NZL"))] 
-
-# remove regions in produciton file (needed for scale calculations)
-dfProduction <- dfProduction[which(dfProduction$ISO3%in%vecCRegionFinal),]
-save(dfProduction, file="datasetsDerived/dfProduction_global.RData")
+vecLevelFinal <- vecLevelFinal[-which(vecLevelFinal%in%c("EGY","PRK", "GIN", "KEN","MOZ","ZMB","IRL","NLD","NZL"))] 
 
 ## summarize per time frame 
-lsAll <- lapply(vecCRegionFinal,function(reg){
+lsAll <- lapply(vecLevelFinal,function(reg){
   # detrend yields
   show(as.character(reg))
   lsAggregate <- lapply(c(1968,1978,1988,1998,2008),function(yearStart){
     
-    sumReg <- sum(dfYield$ISO3==reg&dfYield$Year>=yearStart&dfYield$Year<=(yearStart+9))
-    if(sumReg==10){
+    sumLevel <- sum(dfYield$Level==reg&dfYield$Year>=yearStart&dfYield$Year<=(yearStart+9))
+    if(sumLevel==10){
       # subset data for the target country
-      dfProductionSumReg <- dfYield[which(dfYield$ISO3==reg&dfYield$Year>=yearStart&dfYield$Year<=(yearStart+9)),]
-      dfProductionSumReg$YieldDet <- resid(lm(Yield ~ Year^2,data=dfProductionSumReg))
-      dfShannonReg <- dfShannon[which(dfShannon$ISO3==reg&dfShannon$Year>=yearStart&dfShannon$Year<=(yearStart+9)),]
-      dfCroplandReg <- dfCropland[which(dfCropland$ISO3==reg&dfCropland$Year>=yearStart&dfCropland$Year<=(yearStart+9)),]
-      dfFertilizerReg <- dfFertilizer[which(dfFertilizer$ISO3==reg&dfFertilizer$Year>=yearStart&dfFertilizer$Year<=(yearStart+9)),]
-      dfIrrigationReg <- dfIrrigation[which(dfIrrigation$ISO3==reg&dfIrrigation$Year>=yearStart&dfIrrigation$Year<=(yearStart+9)),]
-      dfClimateReg <- dfClimateFinal[which(dfClimateFinal$ISO3==reg&dfClimateFinal$Year>=yearStart&dfClimateFinal$Year<=(yearStart+9)),]
+      dfProductionSumLevel <- dfYield[which(dfYield$Level==reg&dfYield$Year>=yearStart&dfYield$Year<=(yearStart+9)),]
+      dfProductionSumLevel$YieldDet <- resid(lm(Yield ~ Year^2,data=dfProductionSumLevel))
+      dfShannonLevel <- dfShannon[which(dfShannon$Level==reg&dfShannon$Year>=yearStart&dfShannon$Year<=(yearStart+9)),]
+      dfCroplandLevel <- dfCropland[which(dfCropland$Level==reg&dfCropland$Year>=yearStart&dfCropland$Year<=(yearStart+9)),]
+      dfFertilizerLevel <- dfFertilizer[which(dfFertilizer$Level==reg&dfFertilizer$Year>=yearStart&dfFertilizer$Year<=(yearStart+9)),]
+      dfIrrigationLevel <- dfIrrigation[which(dfIrrigation$Level==reg&dfIrrigation$Year>=yearStart&dfIrrigation$Year<=(yearStart+9)),]
+      dfClimateLevel <- dfClimateFinal[which(dfClimateFinal$Level==reg&dfClimateFinal$Year>=yearStart&dfClimateFinal$Year<=(yearStart+9)),]
     
-      dfSummary <- data.frame(ISO3=reg, timePeriod= yearStart)
-      dfSummary$stability <- mean(dfProductionSumReg$Yield,na.rm=T)/sd(dfProductionSumReg$YieldDet,na.rm=T)
-      dfSummary$yield <- mean(dfProductionSumReg$Yield,na.rm=T)
-      dfSummary$areaHarvested <- mean(dfProductionSumReg$AreaHarvested,na.rm=T)
-      dfSummary$diversity <- mean(dfShannonReg$diversity,na.rm=T)
-      dfSummary$meanCropland <- mean(dfCroplandReg$croplandArea,na.rm=T)
-      dfSummary$meanNitrogen <- mean(dfFertilizerReg$Nitrogen,na.rm=T)
-      dfSummary$meanIrrigation_share <- mean(dfIrrigationReg$Irrigation,na.rm=T)
-      dfSummary$instabilityTemp <- -(mean(dfClimateReg$meanTemp,na.rm=T)/sd(dfClimateReg$meanTemp,na.rm=T))
-      dfSummary$instabilityPrec <- -(mean(dfClimateReg$meanPrec,na.rm=T)/sd(dfClimateReg$meanPrec,na.rm=T))
+      dfSummary <- data.frame(Level=reg, timePeriod= yearStart)
+      dfSummary$stability <- mean(dfProductionSumLevel$Yield,na.rm=T)/sd(dfProductionSumLevel$YieldDet,na.rm=T)
+      dfSummary$yield <- mean(dfProductionSumLevel$Yield,na.rm=T)
+      dfSummary$areaHarvested <- mean(dfProductionSumLevel$AreaHarvested,na.rm=T)
+      dfSummary$diversity <- mean(dfShannonLevel$diversity,na.rm=T)
+      dfSummary$meanCropland <- mean(dfCroplandLevel$croplandArea,na.rm=T)
+      dfSummary$meanNitrogen <- mean(dfFertilizerLevel$Nitrogen,na.rm=T)
+      dfSummary$irrigation <- mean(dfIrrigationLevel$Irrigation,na.rm=T)
+      dfSummary$instabilityTemp <- -(mean(dfClimateLevel$meanTemp,na.rm=T)/sd(dfClimateLevel$meanTemp,na.rm=T))
+      dfSummary$instabilityPrec <- -(mean(dfClimateLevel$meanPrec,na.rm=T)/sd(dfClimateLevel$meanPrec,na.rm=T))
       na.omit(dfSummary)
     }
   })
@@ -311,28 +306,30 @@ lsAll <- lapply(vecCRegionFinal,function(reg){
 })
 dfAll <- do.call(rbind,lsAll)
 head(dfAll)
-nrow(unique(dfAll[,c("ISO3","timePeriod")])) == nrow(dfAll) # check duplicates
+nrow(unique(dfAll[,c("Level","timePeriod")])) == nrow(dfAll) # check duplicates
 
 unique(dfAll$timePeriod)
 head(dfAll)
 
 ## calculate nitrogen per ha
-dfAll$meanFertilizer <- dfAll$meanNitrogen/dfAll$meanCropland
+dfAll$fertilizer <- dfAll$meanNitrogen/dfAll$meanCropland
 # check NA
 sum(is.na(dfAll))
 ## omit NA
 dfAll <- na.omit(dfAll)
-length(unique(dfAll$ISO3)) ## 135 countries
+length(unique(dfAll$Level)) ## 137 countries
 
 ## save dataframe
-names(dfAll)
 names(dfAll)[1] <- "Country"
 dfAll <- dfAll[,c("Country","timePeriod",
                   "stability","yield","areaHarvested",
-                  "diversity","meanNitrogen","meanIrrigation_share",
+                  "diversity","fertilizer","irrigation",
                   "instabilityTemp","instabilityPrec")]
 write.csv(dfAll, "datasetsDerived/dataFinal_global.csv",row.names=F)
 
+# save full production file
+dfProduction <- dfProduction[which(dfProduction$Level%in%unique(dfAll$Country)),]
+save(dfProduction, file="datasetsDerived/dfProduction_global.RData")
 
 
 rm(list=ls())

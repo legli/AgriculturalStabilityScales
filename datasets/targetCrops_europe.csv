@@ -1,4 +1,4 @@
-crops,Name,NameFAO,calories,Protein (g/t),Fat(g/t),Comments,FoodGroup,GrowthLength,GrowthStructure
+crops,Name,NameFAO,Calories,Protein (g/t),Fat(g/t),Comments,FoodGroup,GrowthLength,GrowthStructure
 UAA,Utilised Agricultural Area,NA,NA,NA,NA,No crop,NA,NA,NA
 ARA,Arable land,NA,NA,NA,NA,No crop,NA,NA,NA
 C0000,Cereals for the production of grain (including seed),NA,NA,NA,NA,Top group,NA,NA,NA
