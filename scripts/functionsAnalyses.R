@@ -304,3 +304,25 @@ funLegend <- function(title)
     labs(y=title,x="") 
   g.legend
 }
+
+
+funFig1 <- function(df,response,effect)
+{
+  ggplot(df, aes(x=areaHarvested, y=response, color = factor(timePeriod))) +
+    geom_point(size=0.3,alpha=0.2) +
+    scale_colour_manual(name="Time interval",values = vecColors, labels = c("1968-1977","1978-1987","1988-1997","1998-2007","2008-2017")) +
+    scale_radius(range = c(2,12)) +
+    geom_abline(intercept = effect[,1],slope = effect[,2],color=vecColors)+
+    theme_classic() +
+    xlab("Area harvested") +
+    ylab("Stability") +
+    theme(axis.title.x = element_text(size=8)) +
+    theme(axis.text.x = element_text(size=8)) +
+    theme(axis.title.y = element_text(size=8)) +
+    theme(axis.text.y = element_text(size=8)) +
+    theme(legend.position = c(0.8, 0.17))+
+    theme(legend.title = element_text(size = 8),
+          legend.text = element_text(size = 8)) +
+    theme(plot.margin = unit(c(0.2,0.2,1.5,0.2), "cm")) +
+    theme(legend.key.size = unit(0.2,"cm"))
+}

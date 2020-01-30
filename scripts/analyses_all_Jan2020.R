@@ -5,10 +5,12 @@ library(rgdal)
 # library(raster)
 library(plyr)
 library(RColorBrewer)
+library(lme4)
+library(MuMIn)
 
 ## globals
 
-lev <- c("National","Subnational","Farm")
+lev <- c("Country","Region","Farm")
 myColors <- c("#4daf4a","#045A8D", "#ff7f00")
 names(myColors) <- factor(lev,levels=lev)
 
@@ -17,128 +19,40 @@ vecColMap[5] <- "gray75"
 
 source("scripts/functionsAnalyses.R")
 
-##################### Regression local
+##################### Read data
 
-###### National level
-### preparation
-# read df
+###### Country level
 dfCountry <- read.csv("datasetsDerived/dataFinal_global.csv")
 hist(dfCountry$stability)
 
-### regression analyses
-## transformations
-dfLogNational=with(dfCountry,data.frame(Country,
-                                  stability = log(stability),
-                                  yield = log(yield),
-                                  diversity, 
-                                  irrigation=sqrt(irrigation),
-                                  fertilizer=sqrt(fertilizer),
-                                  instabilityTemp,instabilityPrec,
-                                  timePeriod
-))
-names(dfLogNational)
-head(dfLogNational)
+dfCountryScale <- read.csv("datasetsDerived/dataScales_global.csv")
+dfCountryScale <- dfCountryScale[,c("Level","timePeriod","stability","yield","areaHarvested","prop")]
+dfCountryScale <- unique(dfCountryScale)
+names(dfCountryScale)[1] <- "Country"
 
-# scale predictors for standardized regression
-dfPredictorsNational=sapply(dfLogNational[,-c(1:3)],function(x)scale(x,center = T,scale=T)[,1])
-dfCenterNational=data.frame(Country=dfLogNational[,1],stability=dfLogNational[,2],yield=dfLogNational[,3],dfPredictorsNational)
-head(dfCenterNational)
-
-## regression models
-modStabilityNational <- lm(stability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterNational)
-summary(modStabilityNational)
-modStabilityNationalRaw <- lm(stability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfLogNational)
-summary(modStabilityNationalRaw)
-# detect and remove outliersbased on 4/n criteria
-# dfCenterNational$cooksd <- cooks.distance(modStabilityNational)
-# modStabilityNational <- lm(stability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterNational[which(dfCenterNational$cooksd < 4/nrow(dfCenterNational)),])
-# summary(modStabilityNational)
-
-modYieldNational <- lm(yield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterNational)
-summary(modYieldNational)
-modYieldNationalRaw <- lm(yield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfLogNational)
-summary(modYieldNationalRaw)
-
-###### SUBNATIONAL LEVEL
-### preparation
+###### Regional level
 dfRegion <- read.csv("datasetsDerived/dataFinal_europe.csv")
 dfRegion <- merge(dfRegion,dfCountry[,c("Country","timePeriod","fertilizer","irrigation")],by=c("Country","timePeriod"))
 hist(dfRegion$stability)
 
-### regression analyses
-## transformations
-dfLogSubnational=with(dfRegion,data.frame(Region,
-                                  stability = log(stability),
-                                  yield = log(yield),
-                                  diversity, 
-                                  irrigation=sqrt(irrigation),
-                                  fertilizer=sqrt(fertilizer),                                  
-                                  instabilityTemp,instabilityPrec,
-                                  timePeriod
-))
-names(dfLogSubnational)
-head(dfLogSubnational)
+dfRegionScale <- read.csv("datasetsDerived/dataScales_europe.csv")
+dfRegionScale <- dfRegionScale[,c("Level","timePeriod","stability","yield","areaHarvested","prop")]
+dfRegionScale <- unique(dfRegionScale)
+names(dfRegionScale)[1] <- "Region"
 
-# scale predictors for standardized regression
-dfPredictorsSubnational=sapply(dfLogSubnational[,-c(1:3)],function(x)scale(x,center = T,scale=T)[,1])
-dfCenterSubnational=data.frame(Area=dfLogSubnational[,1],stability=dfLogSubnational[,2],yield=dfLogSubnational[,3],dfPredictorsSubnational)
-head(dfCenterSubnational)
-
-# regression models
-modStabilitySubnational <- lm(stability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterSubnational)
-summary(modStabilitySubnational)
-modStabilitySubnationalRaw <- lm(stability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfLogSubnational)
-summary(modStabilitySubnationalRaw)
-
-modYieldSubnational <- lm(yield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterSubnational)
-summary(modYieldSubnational)
-modYieldSubnationalRaw <- lm(yield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfLogSubnational)
-summary(modYieldSubnationalRaw)
-
-####### FARM LEVEL
-### preparation
+###### Farm level
 dfFarm <- read.csv("P:/dataFinal_farmlevel.csv")
-
 hist(dfFarm$stability)
 
-### regression analyses
-## transformations
-dfLogFarm=with(dfFarm,data.frame(Farm,
-                                  stability = log(stability),
-                                  yield = log(yield),
-                                  diversity,
-                                  irrigation=sqrt(irrigation),
-                                  fertilizer=sqrt(fertilizer),
-                                  instabilityTemp,instabilityPrec,
-                                  timePeriod
-))
-names(dfLogFarm)
-head(dfLogFarm)
+dfFarmScale <- read.csv("P:/dataScales_farm.csv")
+dfFarmScale <- dfFarmScale[,c("Area","timePeriod","stability","yield","areaHarvested","prop")]
+dfFarmScale <- unique(dfFarmScale)
+names(dfFarmScale)[1] <- "Farmer"
 
-# scale predictors for standardized regression
-dfPredictorsFarm=sapply(dfLogFarm[,-c(1:3)],function(x)scale(x,center = T,scale=T)[,1])
-dfCenterFarm=data.frame(Farm=dfLogFarm[,1],stability=dfLogFarm[,2],yield=dfLogFarm[,3],dfPredictorsFarm)
-head(dfCenterFarm)
-
-# regression models
-modStabilityFarm <- lm(stability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterFarm)
-summary(modStabilityFarm)
-modStabilityFarmRaw <- lm(stability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfLogFarm)
-summary(modStabilityFarmRaw)
-
-modYieldFarm <- lm(yield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterFarm)
-summary(modYieldFarm)
-modYieldFarmRaw <- lm(yield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfLogFarm)
-summary(modYieldFarmRaw)
 
 ##################### Regression scale
-###### National level
+###### Country level
 ### preparation
-dfCountryScale <- read.csv("datasetsDerived/dataScales_global.csv")
-dfCountryScale <- dfCountryScale[,c("Area","timePeriod","stability","yield","areaHarvested","prop")]
-dfCountryScale <- unique(dfCountryScale)
-names(dfCountryScale)[1] <- "Country"
-
 # add original data
 dfCountryRed <- dfCountry
 dfCountryRed$prop <- 0
@@ -148,46 +62,48 @@ dfCountryScaleFinal$areaHarvested <- dfCountryScaleFinal$areaHarvested/1000000
 
 ### regression analyses
 ## transformations
-dfLogNationalScale=with(dfCountryScaleFinal,data.frame(Country,
+dfLogCountryScale=with(dfCountryScaleFinal,data.frame(Country,
                                         stability = log(stability),
                                         yield = log(yield),
-                                        areaHarvested, 
+                                        areaHarvested=areaHarvested, 
                                         timePeriod
 ))
 
-# scale predictors for standardized regression
-dfPredictorsNationalScale=sapply(dfLogNationalScale[,-c(1:3)],function(x)scale(x,center = T,scale=T)[,1])
-dfCenterNationalScale=data.frame(Country=dfLogNationalScale[,1],stability=dfLogNationalScale[,2],yield=dfLogNationalScale[,3],dfPredictorsNationalScale)
-head(dfCenterNationalScale)
+## linear model
+modStabilityCountryScale <- lm(stability~areaHarvested+timePeriod,dfLogCountryScale)
+summary(modStabilityCountryScale)
+modYieldCountryScale <- lm(yield~areaHarvested+timePeriod,dfLogCountryScale)
+summary(modYieldCountryScale)
 
-## regression models
-modStabilityNationalScale <- lm(stability~areaHarvested+timePeriod,dfCenterNationalScale)
-summary(modStabilityNationalScale)
-modStabilityNationalScaleRaw <- lm(stability~areaHarvested+timePeriod,dfLogNationalScale)
-summary(modStabilityNationalScaleRaw)
+## mixed effect model
+dfLogCountryScale$timePeriod <- factor(dfLogCountryScale$timePeriod,levels=c("1968","1978","1988","1998","2008"))
+modStabilityCountryScaleMixed=lme(stability~areaHarvested,data=dfLogCountryScale,random=~areaHarvested|timePeriod,method="ML")
+summary(modStabilityCountryScaleMixed)
+AICc(modStabilityCountryScale,modStabilityCountryScaleMixed) # mixed effects model makes sense
+modStabilityCountryScaleMixedFixed=fixef(modStabilityCountryScaleMixed)
+modStabilityCountryScaleMixedTime <-   coef(modStabilityCountryScaleMixed)
+r.squaredGLMM(modStabilityCountryScaleMixed) 
 
-modYieldNationalScale <- lm(yield~areaHarvested+timePeriod,dfCenterNationalScale)
-summary(modYieldNationalScale)
-modYieldNationalScaleRaw <- lm(yield~areaHarvested+timePeriod,dfLogNationalScale)
-summary(modYieldNationalScaleRaw)
+modYieldCountryScaleMixed=lme(yield~areaHarvested,data=dfLogCountryScale,random=~areaHarvested|timePeriod,method="ML")
+summary(modYieldCountryScaleMixed)
+AICc(modYieldCountryScale,modYieldCountryScaleMixed) # mixed effects model makes sense
+modYieldCountryScaleMixedFixed=fixef(modYieldCountryScaleMixed)
+modYieldCountryScaleMixedTime <-   coef(modYieldCountryScaleMixed)
+r.squaredGLMM(modYieldCountryScaleMixed) 
+
 
 ###### European level
 ### preparation
-dfRegionScale <- read.csv("datasetsDerived/dataScales_europe.csv")
-dfRegionScale <- dfRegionScale[,c("Area","timePeriod","stability","yield","areaHarvested","prop")]
-dfRegionScale <- unique(dfRegionScale)
-names(dfRegionScale)[1] <- "RegionCode"
-
 # add original data
 dfRegionRed <- dfRegion
 dfRegionRed$prop <- 0
-dfRegionScaleFinal <- rbind(dfRegionRed[,c("RegionCode","timePeriod","stability","yield","areaHarvested")],dfRegionScale[,c("RegionCode","timePeriod","stability","yield","areaHarvested")])
+dfRegionScaleFinal <- rbind(dfRegionRed[,c("Region","timePeriod","stability","yield","areaHarvested")],dfRegionScale[,c("Region","timePeriod","stability","yield","areaHarvested")])
 # change area harvested to mio ha
 dfRegionScaleFinal$areaHarvested <- dfRegionScaleFinal$areaHarvested/1000000
 
 ### regression analyses
 ## transformations
-dfLogSubnationalScale=with(dfRegionScaleFinal,data.frame(RegionCode,
+dfLogRegionScale=with(dfRegionScaleFinal,data.frame(Region,
                                                       stability = log(stability),
                                                       yield = log(yield),
                                                       areaHarvested, 
@@ -195,28 +111,23 @@ dfLogSubnationalScale=with(dfRegionScaleFinal,data.frame(RegionCode,
 ))
 
 # scale predictors for standardized regression
-dfPredictorsSubnationalScale=sapply(dfLogSubnationalScale[,-c(1:3)],function(x)scale(x,center = T,scale=T)[,1])
-dfCenterSubnationalScale=data.frame(RegionCode=dfLogSubnationalScale[,1],stability=dfLogSubnationalScale[,2],yield=dfLogSubnationalScale[,3],dfPredictorsSubnationalScale)
-head(dfCenterSubnationalScale)
+dfPredictorsRegionScale=sapply(dfLogRegionScale[,-c(1:3)],function(x)scale(x,center = T,scale=T)[,1])
+dfCenterRegionScale=data.frame(RegionCode=dfLogRegionScale[,1],stability=dfLogRegionScale[,2],yield=dfLogRegionScale[,3],dfPredictorsRegionScale)
+head(dfCenterRegionScale)
 
 ## regression models
-modStabilitySubnationalScale <- lm(stability~areaHarvested+timePeriod,dfCenterSubnationalScale)
-summary(modStabilitySubnationalScale)
-modStabilitySubnationalScaleRaw <- lm(stability~areaHarvested+timePeriod,dfLogSubnationalScale)
-summary(modStabilitySubnationalScaleRaw)
+modStabilityRegionScale <- lm(stability~areaHarvested+timePeriod,dfCenterRegionScale)
+summary(modStabilityRegionScale)
+modStabilityRegionScaleRaw <- lm(stability~areaHarvested+timePeriod,dfLogRegionScale)
+summary(modStabilityRegionScaleRaw)
 
-modYieldSubnationalScale <- lm(yield~areaHarvested+timePeriod,dfCenterSubnationalScale)
-summary(modYieldSubnationalScale)
-modYieldSubnationalScaleRaw <- lm(yield~areaHarvested+timePeriod,dfLogSubnationalScale)
-summary(modYieldSubnationalScaleRaw)
+modYieldRegionScale <- lm(yield~areaHarvested+timePeriod,dfCenterRegionScale)
+summary(modYieldRegionScale)
+modYieldRegionScaleRaw <- lm(yield~areaHarvested+timePeriod,dfLogRegionScale)
+summary(modYieldRegionScaleRaw)
 
 ###### Farm level
 ### preparation
-dfFarmScale <- read.csv("P:/dataScales_farm.csv")
-dfFarmScale <- dfFarmScale[,c("Area","timePeriod","stability","yield","areaHarvested","prop")]
-dfFarmScale <- unique(dfFarmScale)
-names(dfFarmScale)[1] <- "Farmer"
-
 # add original data
 dfFarmRed <- dfFarm
 dfFarmRed$prop <- 0
@@ -250,9 +161,8 @@ modYieldFarmScaleRaw <- lm(yield~areaHarvested+timePeriod,dfLogFarmScale)
 summary(modYieldFarmScaleRaw)
 
 ##################### Regression combined
-###### National level
+###### Country level
 ### preparation
-
 # get extremes
 dfCountryCombined <- merge(dfCountryRed,dfCountryScale[which(dfCountryScale$prop==1),],by=c("Country","timePeriod"))
 head(dfCountryCombined)
@@ -262,37 +172,36 @@ dfCountryCombined$slopeYield <- dfCountryCombined$yield.y/dfCountryCombined$yiel
 
 ### regression analyses
 ## transformations
-dfLogNationalCombined=with(dfCountryCombined,data.frame(Country,
+dfLogCountryCombined=with(dfCountryCombined,data.frame(Country,
                                          slopeStability = log(slopeStability),
                                          slopeYield = log(slopeYield),
                                          diversity, 
-                                         irrigation=sqrt(meanIrrigation_share),
-                                         fertilizer=sqrt(meanNitrogen),
+                                         irrigation=sqrt(irrigation),
+                                         fertilizer=sqrt(fertilizer),
                                          instabilityTemp,instabilityPrec,
                                          timePeriod
 ))
 
 # scale predictors for standardized regression
-dfPredictorsNationalCombined=sapply(dfLogNationalCombined[,-c(1:3)],function(x)scale(x,center = T,scale=T)[,1])
-dfCenterNationalCombined=data.frame(Country=dfLogNationalCombined[,1],slopeStability=dfLogNationalCombined[,2],slopeYield=dfLogNationalCombined[,3],dfPredictorsNationalCombined)
-head(dfCenterNationalCombined)
+dfPredictorsCountryCombined=sapply(dfLogCountryCombined[,-c(1:3)],function(x)scale(x,center = T,scale=T)[,1])
+dfCenterCountryCombined=data.frame(Country=dfLogCountryCombined[,1],slopeStability=dfLogCountryCombined[,2],slopeYield=dfLogCountryCombined[,3],dfPredictorsCountryCombined)
+head(dfCenterCountryCombined)
 
 ## regression models
-modStabilityNationalCombined <- lm(slopeStability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterNationalCombined)
-summary(modStabilityNationalCombined)
-modStabilityNationalCombinedRaw <- lm(slopeStability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfLogNationalCombined)
-summary(modStabilityNationalCombinedRaw)
+modStabilityCountryCombined <- lm(slopeStability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterCountryCombined)
+summary(modStabilityCountryCombined)
+modStabilityCountryCombinedRaw <- lm(slopeStability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfLogCountryCombined)
+summary(modStabilityCountryCombinedRaw)
 
-modYieldNationalCombined <- lm(slopeYield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterNationalCombined)
-summary(modYieldNationalCombined)
-modYieldNationalCombinedRaw <- lm(slopeYield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfLogNationalCombined)
-summary(modYieldNationalCombinedRaw)
+modYieldCountryCombined <- lm(slopeYield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterCountryCombined)
+summary(modYieldCountryCombined)
+modYieldCountryCombinedRaw <- lm(slopeYield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfLogCountryCombined)
+summary(modYieldCountryCombinedRaw)
 
 ###### European level
 ### preparation
-
 # get extremes
-dfRegionCombined <- merge(dfRegionRed,dfRegionScale[which(dfRegionScale$prop==1),],by=c("RegionCode","timePeriod"))
+dfRegionCombined <- merge(dfRegionRed,dfRegionScale[which(dfRegionScale$prop==1),],by=c("Region","timePeriod"))
 head(dfRegionCombined)
 dfRegionCombined$slopeStability <- dfRegionCombined$stability.y/dfRegionCombined$stability.x
 sum(dfRegionCombined$timePeriod==2008&dfRegionCombined$slopeStability<1)/sum(dfRegionCombined$timePeriod==2008)
@@ -300,31 +209,31 @@ dfRegionCombined$slopeYield <- dfRegionCombined$yield.y/dfRegionCombined$yield.x
 
 ### regression analyses
 ## transformations
-dfLogSubnationalCombined=with(dfRegionCombined,data.frame(Country,
+dfLogRegionCombined=with(dfRegionCombined,data.frame(Region,
                                                          slopeStability = log(slopeStability),
                                                          slopeYield = log(slopeYield),
                                                          diversity, 
-                                                         irrigation=sqrt(meanIrrigation_share),
-                                                         fertilizer=sqrt(meanNitrogen),
+                                                         irrigation=sqrt(irrigation),
+                                                         fertilizer=sqrt(fertilizer),
                                                          instabilityTemp,instabilityPrec,
                                                          timePeriod
 ))
 
 # scale predictors for standardized regression
-dfPredictorsSubnationalCombined=sapply(dfLogSubnationalCombined[,-c(1:3)],function(x)scale(x,center = T,scale=T)[,1])
-dfCenterSubnationalCombined=data.frame(Country=dfLogSubnationalCombined[,1],slopeStability=dfLogSubnationalCombined[,2],slopeYield=dfLogSubnationalCombined[,3],dfPredictorsSubnationalCombined)
-head(dfCenterSubnationalCombined)
+dfPredictorsRegionCombined=sapply(dfLogRegionCombined[,-c(1:3)],function(x)scale(x,center = T,scale=T)[,1])
+dfCenterRegionCombined=data.frame(Country=dfLogRegionCombined[,1],slopeStability=dfLogRegionCombined[,2],slopeYield=dfLogRegionCombined[,3],dfPredictorsRegionCombined)
+head(dfCenterRegionCombined)
 
 ## regression models
-modStabilitySubnationalCombined <- lm(slopeStability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterSubnationalCombined)
-summary(modStabilitySubnationalCombined)
-modStabilitySubnationalCombinedRaw <- lm(slopeStability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfLogSubnationalCombined)
-summary(modStabilitySubnationalCombinedRaw)
+modStabilityRegionCombined <- lm(slopeStability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterRegionCombined)
+summary(modStabilityRegionCombined)
+modStabilityRegionCombinedRaw <- lm(slopeStability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfLogRegionCombined)
+summary(modStabilityRegionCombinedRaw)
 
-modYieldSubnationalCombined <- lm(slopeYield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterSubnationalCombined)
-summary(modYieldSubnationalCombined)
-modYieldSubnationalCombinedRaw <- lm(slopeYield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfLogSubnationalCombined)
-summary(modYieldSubnationalCombinedRaw)
+modYieldRegionCombined <- lm(slopeYield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterRegionCombined)
+summary(modYieldRegionCombined)
+modYieldRegionCombinedRaw <- lm(slopeYield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfLogRegionCombined)
+summary(modYieldRegionCombinedRaw)
 
 ###### Farm level
 ### preparation
@@ -366,43 +275,77 @@ summary(modYieldFarmCombinedRaw)
 
 ###### FIGURES
 
-### Fig 1. 
-# barplot of local stability model
-a1 <- funCombinePlot(modStabilityNational,modStabilityNationalScale,T,"National",myColors[1],0.4,"Yield stability")
-b1 <- funCombinePlot(modStabilitySubnational,modStabilitySubnationalScale,T,"Subnational",myColors[2],0.4,"")
-c1 <- funCombinePlot(modStabilityFarm,modStabilityFarmScale,T,"Farm",myColors[3],0.4,"")
-as1 <- funCombinePlot(modYieldNational,modYieldNationalScale,T,"National",myColors[1],0.6,"Yield")
-bs1 <- funCombinePlot(modYieldSubnational,modYieldSubnationalScale,T,"Subnational",myColors[2],0.6,"")
-cs1 <- funCombinePlot(modYieldFarm,modYieldFarmScale,T,"Farm",myColors[3],0.6,"")
+### Fig 1: scale model
+vecColors <- brewer.pal(5,"PuBu")
+
+a1 <- funFig1(dfLogCountryScale,dfLogCountryScale$stability,modStabilityCountryScaleMixedTime)
+as1 <- funFig1(dfLogCountryScale,dfLogCountryScale$yield,modYieldCountryScaleMixedTime)
+
+
+# dfNew <- data.frame(areaHarvested=rep(seq(min(dfLogCountryScale$areaHarvested),max(dfLogCountryScale$areaHarvested),length.out = 1000),5),timePeriod=factor(c(rep("1968",1000),rep("1978",1000),rep("1988",1000),rep("1998",1000),rep("2008",1000))))
+# dfNew$stability <- exp(predict(modStabilityCountryScaleMixed,newdata = dfNew))
+# dfNew <- rbind(dfNew,dfCountryScaleFinal[,c("areaHarvested","timePeriod","stability")])
+# dfNew$state <- "predicted"
+# dfNew[5001:nrow(dfNew),"state"] <- "orig"
+# a1 <- ggplot(dfNew[which(dfNew$state=="orig"),], aes(x=areaHarvested, y=stability, color = factor(timePeriod))) +
+#   geom_point(size=0.7,alpha=0.2) +
+#   geom_line(data=dfNew[which(dfNew$state=="predicted"),]) +
+#   scale_colour_manual(name="Time interval",values = vecColors, labels = c("1968-1977","1978-1987","1988-1997","1998-2007","2008-2017")) +
+#   # scale_radius(range = c(2,12)) +
+#   # geom_abline(intercept = exp(modStabilityCountryScaleMixedTime[,1]),slope = exp(modStabilityCountryScaleMixedTime[,2]),color=vecColors)+
+#   # geom_abline(intercept = summary(modDiversityLM)$coefficients[1,1],slope = summary(modDiversityLM)$coefficients[2,1],color="black",linetype=3)+
+#   theme_classic() +  
+#   xlab("Area harvested") +
+#   ylab("Stability") + 
+#   theme(axis.title.x = element_text(size=8)) +  
+#   theme(axis.text.x = element_text(size=8)) +
+#   theme(axis.title.y = element_text(size=8)) +    
+#   theme(axis.text.y = element_text(size=8)) +
+#   theme(legend.position = c(0.8, 0.17))+
+#   theme(legend.title = element_text(size = 8),
+#         legend.text = element_text(size = 8)) +
+#   theme(plot.margin = unit(c(0.2,0.2,1.5,0.2), "cm")) +
+#   theme(legend.key.size = unit(0.2,"cm"))
 
 # plot
 jpeg("results/Fig1.jpeg", width = 16.9, height = 16.9*0.3, units = 'cm', res = 600)
-  ggarrange(a1,b1,c1,
-            labels = letters[1:3],font.label=list(size=8),
+  ggarrange(a1,#b1,c1,
+            labels = letters[1],font.label=list(size=8),
             ncol = 3, nrow = 1)
 dev.off()
 jpeg("results/FigS1.jpeg", width = 16.9, height = 16.9*0.3, units = 'cm', res = 600)
-  ggarrange(as1,bs1,cs1,
+  ggarrange(as1,#bs1,cs1,
             labels = letters[1:3],font.label=list(size=8),
             ncol = 3, nrow = 1)
 dev.off()
 
+
 ### Fig 2
+mapCountry <- readOGR("spatial/countries_global.shp")
+mapCountry <- getMap()
+
+mapCountry$Country <- mapCountry$ISO3
+mapCountry <- fortify(mapCountry,region="ISO3")
+
+mapCountryStability = join(mapCountry, dfCountryCombined[,c("Country","stability.x","stability.y")], by="Country")
+a3 <- funMapPlot(mapCountryStability,mapCountryStability$dim1)
+
+### Fig 3
 # barplot of combined stability model
-a2 <- funCombinePlot(modStabilityNationalCombined,NULL,T,"National",myColors[1],0.4,"Yield stability ratio")
-b2 <- funCombinePlot(modStabilitySubnationalCombined,NULL,T,"Subnational",myColors[2],0.4,"")
+a2 <- funCombinePlot(modStabilityCountryCombined,NULL,T,"Country",myColors[1],0.4,"Yield stability ratio")
+b2 <- funCombinePlot(modStabilityRegionCombined,NULL,T,"Region",myColors[2],0.4,"")
 c2 <- funCombinePlot(modStabilityFarmCombined,NULL,T,"Farm",myColors[3],0.4,"")
-as2 <- funCombinePlot(modYieldNationalCombined,NULL,T,"National",myColors[1],0.6,"Yield ratio")
-bs2 <- funCombinePlot(modYieldSubnationalCombined,NULL,T,"Subnational",myColors[2],0.6,"")
+as2 <- funCombinePlot(modYieldCountryCombined,NULL,T,"Country",myColors[1],0.6,"Yield ratio")
+bs2 <- funCombinePlot(modYieldRegionCombined,NULL,T,"Region",myColors[2],0.6,"")
 cs2 <- funCombinePlot(modYieldFarmCombined,NULL,T,"Farm",myColors[3],0.6,"")
 
 # plot
-jpeg("results/Fig2.jpeg", width = 16.9, height = 16.9*0.3, units = 'cm', res = 600)
+jpeg("results/Fig3.jpeg", width = 16.9, height = 16.9*0.3, units = 'cm', res = 600)
   ggarrange(a2,b2,c2,
             labels = letters[1:3],font.label=list(size=8),
             ncol = 3, nrow = 1)
 dev.off()
-jpeg("results/FigS2.jpeg", width = 16.9, height = 16.9*0.3, units = 'cm', res = 600)
+jpeg("results/FigS3.jpeg", width = 16.9, height = 16.9*0.3, units = 'cm', res = 600)
   ggarrange(as2,bs2,cs2,
             labels = letters[1:3],font.label=list(size=8),
             ncol = 3, nrow = 1)
@@ -411,21 +354,21 @@ dev.off()
 
 ### Fig 3: predict if scale minimization can be buffered by diversification
 # spatial
-mapNational <- readOGR("spatial/countries_global.shp")
-mapNational$Area <- factor(as.character(mapNational$Area))
-mapNational <- fortify(mapNational,region="Area")
+mapCountry <- readOGR("spatial/countries_global.shp")
+mapCountry$Area <- factor(as.character(mapCountry$Area))
+mapCountry <- fortify(mapCountry,region="Area")
 emptyPlot <- ggplot(data.frame())+theme_void()
 
-dfPredict <- dfCenterNationalCombined[which(dfCenterNationalCombined$timePeriod==max(dfCenterNationalCombined$timePeriod)),c("Country","diversity","irrigation","fertilizer","instabilityTemp","instabilityPrec","timePeriod")]
+dfPredict <- dfCenterCountryCombined[which(dfCenterCountryCombined$timePeriod==max(dfCenterCountryCombined$timePeriod)),c("Country","diversity","irrigation","fertilizer","instabilityTemp","instabilityPrec","timePeriod")]
 
 ## stability
-dfPredictStability <- funPredictCountry(dfPredict,modStabilityNationalCombined,"slopeStability")
+dfPredictStability <- funPredictCountry(dfPredict,modStabilityCountryCombined,"slopeStability")
 
-mapNationalStability = join(mapNational, dfPredictStability[,c("id","dim1","dim2","dim3","dim4")], by="id")
-a3 <- funMapPlot(mapNationalStability,mapNationalStability$dim1)
-b3 <- funMapPlot(mapNationalStability,mapNationalStability$dim2)
-c3 <- funMapPlot(mapNationalStability,mapNationalStability$dim3)
-d3 <- funMapPlot(mapNationalStability,mapNationalStability$dim4)
+mapCountryStability = join(mapCountry, dfPredictStability[,c("id","dim1","dim2","dim3","dim4")], by="id")
+a3 <- funMapPlot(mapCountryStability,mapCountryStability$dim1)
+b3 <- funMapPlot(mapCountryStability,mapCountryStability$dim2)
+c3 <- funMapPlot(mapCountryStability,mapCountryStability$dim3)
+d3 <- funMapPlot(mapCountryStability,mapCountryStability$dim4)
 legendStability <- funLegend("Yield stability ratio")
 
 jpeg("results/Fig3.jpeg", width = 16.9, height = 16.9*0.5, units = 'cm', res = 600)
@@ -435,13 +378,13 @@ dev.off()
 
 
 # ## yield
-dfPredictYield <- funPredictCountry(dfPredict,modYieldNationalCombined,"slopeYield")
-mapNationalYield = join(mapNational, dfPredictYield[,c("id","dim1","dim2","dim3","dim4")], by="id")
-as3 <- funMapPlot(mapNationalYield,mapNationalYield$dim1)
-# bs3 <- funMapPlot(mapNationalYield,mapNationalYield$dim2)
-# cs3 <- funMapPlot(mapNationalYield,mapNationalYield$dim3)
-# ds3 <- funMapPlot(mapNationalYield,mapNationalYield$dim4)
-# es3 <- funMapPlot(mapNationalYield,mapNationalYield$dim5)
+dfPredictYield <- funPredictCountry(dfPredict,modYieldCountryCombined,"slopeYield")
+mapCountryYield = join(mapCountry, dfPredictYield[,c("id","dim1","dim2","dim3","dim4")], by="id")
+as3 <- funMapPlot(mapCountryYield,mapCountryYield$dim1)
+# bs3 <- funMapPlot(mapCountryYield,mapCountryYield$dim2)
+# cs3 <- funMapPlot(mapCountryYield,mapCountryYield$dim3)
+# ds3 <- funMapPlot(mapCountryYield,mapCountryYield$dim4)
+# es3 <- funMapPlot(mapCountryYield,mapCountryYield$dim5)
 legendYield <- funLegend("Yield ratio")
 # 
 jpeg("results/FigS3.jpeg", width = 16.9*0.5, height = 16.9*0.25, units = 'cm', res = 600)
@@ -452,16 +395,16 @@ dev.off()
 
 ######## Tables
 
-Table1a <- funTables(modStabilityNationalRaw,modStabilitySubnationalRaw,modStabilityFarmRaw,5, c("(Intercept)","Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time"))
-Table1b <- funTables(modStabilityNationalScaleRaw,modStabilitySubnationalScaleRaw,modStabilityFarmScaleRaw,5, c("(Intercept)","Area harvested","Time"))
+Table1a <- funTables(modStabilityCountryRaw,modStabilityRegionRaw,modStabilityFarmRaw,5, c("(Intercept)","Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time"))
+Table1b <- funTables(modStabilityCountryScaleRaw,modStabilityRegionScaleRaw,modStabilityFarmScaleRaw,5, c("(Intercept)","Area harvested","Time"))
 write.csv(rbind(Table1a,Table1b),"results/Table1.csv")
-TableS1a <- funTables(modYieldNationalRaw,modYieldSubnationalRaw,modYieldFarmRaw,6, c("(Intercept)","Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time"))
-TableS1b <- funTables(modYieldNationalScaleRaw,modYieldSubnationalScaleRaw,modYieldFarmScaleRaw,6, c("(Intercept)","Area harvested","Time"))
+TableS1a <- funTables(modYieldCountryRaw,modYieldRegionRaw,modYieldFarmRaw,6, c("(Intercept)","Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time"))
+TableS1b <- funTables(modYieldCountryScaleRaw,modYieldRegionScaleRaw,modYieldFarmScaleRaw,6, c("(Intercept)","Area harvested","Time"))
 write.csv(rbind(TableS1a,TableS1b),"results/TableS1.csv")
 
-Table2 <- funTables(modStabilityNationalCombinedRaw,modStabilitySubnationalCombinedRaw,modStabilityFarmCombinedRaw,4, c("(Intercept)","Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time"))
+Table2 <- funTables(modStabilityCountryCombinedRaw,modStabilityRegionCombinedRaw,modStabilityFarmCombinedRaw,4, c("(Intercept)","Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time"))
 write.csv(Table2,"results/Table2.csv")
-TableS2 <- funTables(modYieldNationalCombinedRaw,modYieldSubnationalCombinedRaw,modYieldFarmCombinedRaw,4, c("(Intercept)","Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time"))
+TableS2 <- funTables(modYieldCountryCombinedRaw,modYieldRegionCombinedRaw,modYieldFarmCombinedRaw,4, c("(Intercept)","Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time"))
 write.csv(TableS2,"results/TableS2.csv")
 
 
@@ -484,35 +427,35 @@ rm(list=ls())
 ### Fig 3: raw effect of diversity and scales
 ## global
 # stability
-dfPredictNational <- data.frame(diversity=rep(0,1000),instabilityTemp=0,instabilityPrec=0,irrigation=0,fertilizer=0,timePeriod=0)
-dfPredictSubnational <- data.frame(diversity=rep(0,1000),instabilityTemp=0,instabilityPrec=0,irrigation=0,fertilizer=0,timePeriod=0)
+dfPredictCountry <- data.frame(diversity=rep(0,1000),instabilityTemp=0,instabilityPrec=0,irrigation=0,fertilizer=0,timePeriod=0)
+dfPredictRegion <- data.frame(diversity=rep(0,1000),instabilityTemp=0,instabilityPrec=0,irrigation=0,fertilizer=0,timePeriod=0)
 dfPredictFarm <- data.frame(diversity=rep(0,1000),instabilityTemp=0,instabilityPrec=0,irrigation=0,fertilizer=0,timePeriod=0)
-dfPredictNationalScale <- data.frame(areaHarvested=rep(0,1000),timePeriod=0)
-dfPredictSubnationalScale <- data.frame(areaHarvested=rep(0,1000),timePeriod=0)
+dfPredictCountryScale <- data.frame(areaHarvested=rep(0,1000),timePeriod=0)
+dfPredictRegionScale <- data.frame(areaHarvested=rep(0,1000),timePeriod=0)
 dfPredictFarmScale <- data.frame(areaHarvested=rep(0,1000),timePeriod=0)
 
 dfPredictStability <- rbind(
-                  funPred(dfPredictNational,dfCenterNational,dfLogNational,modStabilityNational,"diversity","National"),
-                  funPred(dfPredictSubnational,dfCenterSubnational,dfLogSubnational,modStabilitySubnational,"diversity","Subnational"),
+                  funPred(dfPredictCountry,dfCenterCountry,dfLogCountry,modStabilityCountry,"diversity","Country"),
+                  funPred(dfPredictRegion,dfCenterRegion,dfLogRegion,modStabilityRegion,"diversity","Region"),
                   funPred(dfPredictFarm,dfCenterFarm,dfLogFarm,modStabilityFarm,"diversity","Farm")
                   )
 
 dfPredictStabilityScale <- rbind(
-  funPred(dfPredictNationalScale,dfCenterNationalScale,dfLogNationalScale,modStabilityNationalScale,"areaHarvested","National"),
-  funPred(dfPredictSubnationalScale,dfCenterSubnationalScale,dfLogSubnationalScale,modStabilitySubnationalScale,"areaHarvested","Subnational"),
+  funPred(dfPredictCountryScale,dfCenterCountryScale,dfLogCountryScale,modStabilityCountryScale,"areaHarvested","Country"),
+  funPred(dfPredictRegionScale,dfCenterRegionScale,dfLogRegionScale,modStabilityRegionScale,"areaHarvested","Region"),
   funPred(dfPredictFarmScale,dfCenterFarmScale,dfLogFarmScale,modStabilityFarmScale,"areaHarvested","Farm")
 )
 
 # yield
 dfPredictYield <- rbind(
-  funPred(dfPredictNational,dfCenterNational,dfLogNational,modYieldNational,"diversity","National"),
-  funPred(dfPredictSubnational,dfCenterSubnational,dfLogSubnational,modYieldSubnational,"diversity","Subnational"),
+  funPred(dfPredictCountry,dfCenterCountry,dfLogCountry,modYieldCountry,"diversity","Country"),
+  funPred(dfPredictRegion,dfCenterRegion,dfLogRegion,modYieldRegion,"diversity","Region"),
   funPred(dfPredictFarm,dfCenterFarm,dfLogFarm,modYieldFarm,"diversity","Farm")
 )
 
 dfPredictYieldScale <- rbind(
-  funPred(dfPredictNationalScale,dfCenterNationalScale,dfLogNationalScale,modYieldNationalScale,"areaHarvested","National"),
-  funPred(dfPredictSubnationalScale,dfCenterSubnationalScale,dfLogSubnationalScale,modYieldSubnationalScale,"areaHarvested","Subnational"),
+  funPred(dfPredictCountryScale,dfCenterCountryScale,dfLogCountryScale,modYieldCountryScale,"areaHarvested","Country"),
+  funPred(dfPredictRegionScale,dfCenterRegionScale,dfLogRegionScale,modYieldRegionScale,"areaHarvested","Region"),
   funPred(dfPredictFarmScale,dfCenterFarmScale,dfLogFarmScale,modYieldFarmScale,"areaHarvested","Farm")
 )
 
@@ -562,9 +505,9 @@ grd$color <- as.character(grd$color)
 
 
 # global
-mapNational <- readOGR("spatial/countries_global.shp")
-plot(mapNational)
-mapNational$Area <- as.character(mapNational$Area)
+mapCountry <- readOGR("spatial/countries_global.shp")
+plot(mapCountry)
+mapCountry$Area <- as.character(mapCountry$Area)
 
 # aggregate ratios
 sum(is.na(dfCountry))
@@ -575,22 +518,22 @@ dfCountryMap <- merge(dfCountryMean,dfCountryState,by.x="Country",by.y="Group.1"
 dfCountryMap$id <- as.character(dfCountryMap$Country)
 head(dfCountryMap)
 
-trintStabilityNational <- as.numeric(quantile(dfCountryMap$ratioStability,probs=seq(0,1,length.out = 4)))
-trintYieldNational <- as.numeric(quantile(dfCountryMap$ratioYield,probs=seq(0,1,length.out = 4)))
+trintStabilityCountry <- as.numeric(quantile(dfCountryMap$ratioStability,probs=seq(0,1,length.out = 4)))
+trintYieldCountry <- as.numeric(quantile(dfCountryMap$ratioYield,probs=seq(0,1,length.out = 4)))
 
-dfCountryMap$dim1 <-car::recode(dfCountryMap$ratioStability,"trintStabilityNational[1]:trintStabilityNational[2]=1; trintStabilityNational[2]:trintStabilityNational[3]=2; trintStabilityNational[3]:trintStabilityNational[4]=3;")
-dfCountryMap$dim2 <-car::recode(dfCountryMap$ratioYield,"trintYieldNational[1]:trintYieldNational[2]=1; trintYieldNational[2]:trintYieldNational[3]=2; trintYieldNational[3]:trintYieldNational[4]=3;")
+dfCountryMap$dim1 <-car::recode(dfCountryMap$ratioStability,"trintStabilityCountry[1]:trintStabilityCountry[2]=1; trintStabilityCountry[2]:trintStabilityCountry[3]=2; trintStabilityCountry[3]:trintStabilityCountry[4]=3;")
+dfCountryMap$dim2 <-car::recode(dfCountryMap$ratioYield,"trintYieldCountry[1]:trintYieldCountry[2]=1; trintYieldCountry[2]:trintYieldCountry[3]=2; trintYieldCountry[3]:trintYieldCountry[4]=3;")
 dfCountryMap <- merge(dfCountryMap[,c("id","benefitStability","benefitYield","dim1","dim2")],grd,by=c("dim1","dim2"))
 dfCountryMap$dim1 <-car::recode(dfCountryMap$benefitStability,"0:(1/3)=1; (1/3):(2/3)=2; (2/3):1=3;")
 dfCountryMap$dim2 <-car::recode(dfCountryMap$benefitYield,"0:(1/3)=1; (1/3):(2/3)=2; (2/3):1=3;")
 dfCountryMap <- merge(dfCountryMap[,c("id","color","dim1","dim2")],grd,by=c("dim1","dim2"))
 names(dfCountryMap)[4:5] <- c("colorMean","colorState")
 
-mapsBivariateNational <- fortify(mapNational,region="Area")
-mapsBivariateNational = join(mapsBivariateNational, dfCountryMap[,c("id","colorMean","colorState")], by="id")
+mapsBivariateCountry <- fortify(mapCountry,region="Area")
+mapsBivariateCountry = join(mapsBivariateCountry, dfCountryMap[,c("id","colorMean","colorState")], by="id")
 
 a3 <- ggplot() +
-  geom_map(data = mapsBivariateNational, map = mapsBivariateNational,
+  geom_map(data = mapsBivariateCountry, map = mapsBivariateCountry,
            aes(x = long, y = lat,  map_id=id, fill=factor(colorMean)),
            colour = "#7f7f7f", size=0.05) +
   scale_fill_identity()+
@@ -598,7 +541,7 @@ a3 <- ggplot() +
   theme(legend.position="none")
 
 d3 <- ggplot() +
-  geom_map(data = mapsBivariateNational, map = mapsBivariateNational,
+  geom_map(data = mapsBivariateCountry, map = mapsBivariateCountry,
            aes(x = long, y = lat,  map_id=id, fill=factor(colorState)),
            colour = "#7f7f7f", size=0.05) +
   scale_fill_identity()+
@@ -606,9 +549,9 @@ d3 <- ggplot() +
   theme(legend.position="none")
 
 # europe
-mapSubnational <- readOGR("spatial/regions_europe.shp")
-plot(mapSubnational)
-mapSubnational$NUTS_ID <- as.character(mapSubnational$NUTS_ID)
+mapRegion <- readOGR("spatial/regions_europe.shp")
+plot(mapRegion)
+mapRegion$NUTS_ID <- as.character(mapRegion$NUTS_ID)
 
 # aggregate ratios
 sum(is.na(dfRegion))
@@ -619,22 +562,22 @@ dfRegionMap <- merge(dfRegionMean,dfRegionState,by.x="RegionCode",by.y="Group.1"
 dfRegionMap$id <- as.character(dfRegionMap$RegionCode)
 head(dfRegionMap)
 
-trintStabilitySubnational <- as.numeric(quantile(dfRegionMap$ratioStability,probs=seq(0,1,length.out = 4)))
-trintYieldSubnational <- as.numeric(quantile(dfRegionMap$ratioYield,probs=seq(0,1,length.out = 4)))
+trintStabilityRegion <- as.numeric(quantile(dfRegionMap$ratioStability,probs=seq(0,1,length.out = 4)))
+trintYieldRegion <- as.numeric(quantile(dfRegionMap$ratioYield,probs=seq(0,1,length.out = 4)))
 
-dfRegionMap$dim1 <-car::recode(dfRegionMap$ratioStability,"trintStabilitySubnational[1]:trintStabilitySubnational[2]=1; trintStabilitySubnational[2]:trintStabilitySubnational[3]=2; trintStabilitySubnational[3]:trintStabilitySubnational[4]=3;")
-dfRegionMap$dim2 <-car::recode(dfRegionMap$ratioYield,"trintYieldSubnational[1]:trintYieldSubnational[2]=1; trintYieldSubnational[2]:trintYieldSubnational[3]=2; trintYieldSubnational[3]:trintYieldSubnational[4]=3;")
+dfRegionMap$dim1 <-car::recode(dfRegionMap$ratioStability,"trintStabilityRegion[1]:trintStabilityRegion[2]=1; trintStabilityRegion[2]:trintStabilityRegion[3]=2; trintStabilityRegion[3]:trintStabilityRegion[4]=3;")
+dfRegionMap$dim2 <-car::recode(dfRegionMap$ratioYield,"trintYieldRegion[1]:trintYieldRegion[2]=1; trintYieldRegion[2]:trintYieldRegion[3]=2; trintYieldRegion[3]:trintYieldRegion[4]=3;")
 dfRegionMap <- merge(dfRegionMap[,c("id","benefitStability","benefitYield","dim1","dim2")],grd,by=c("dim1","dim2"))
 dfRegionMap$dim1 <-car::recode(dfRegionMap$benefitStability,"0:(1/3)=1; (1/3):(2/3)=2; (2/3):1=3;")
 dfRegionMap$dim2 <-car::recode(dfRegionMap$benefitYield,"0:(1/3)=1; (1/3):(2/3)=2; (2/3):1=3;")
 dfRegionMap <- merge(dfRegionMap[,c("id","color","dim1","dim2")],grd,by=c("dim1","dim2"))
 names(dfRegionMap)[4:5] <- c("colorMean","colorState")
 
-mapsBivariateSubnational <- fortify(mapSubnational,region="NUTS_ID")
-mapsBivariateSubnational = join(mapsBivariateSubnational, dfRegionMap[,c("id","colorMean","colorState")], by="id")
+mapsBivariateRegion <- fortify(mapRegion,region="NUTS_ID")
+mapsBivariateRegion = join(mapsBivariateRegion, dfRegionMap[,c("id","colorMean","colorState")], by="id")
 
 b3 <- ggplot() +
-  geom_map(data = mapsBivariateSubnational, map = mapsBivariateSubnational,
+  geom_map(data = mapsBivariateRegion, map = mapsBivariateRegion,
            aes(x = long, y = lat,  map_id=id, fill=factor(colorMean)),
            colour = "#7f7f7f", size=0.05) +
   scale_fill_identity()+
@@ -642,7 +585,7 @@ b3 <- ggplot() +
   theme(legend.position="none")
 
 e3 <- ggplot() +
-  geom_map(data = mapsBivariateSubnational, map = mapsBivariateSubnational,
+  geom_map(data = mapsBivariateRegion, map = mapsBivariateRegion,
            aes(x = long, y = lat,  map_id=id, fill=factor(colorState)),
            colour = "#7f7f7f", size=0.05) +
   scale_fill_identity()+
