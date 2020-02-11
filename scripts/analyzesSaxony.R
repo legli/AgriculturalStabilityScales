@@ -16,7 +16,7 @@ str(dfFull)
 
 
 # remove columns not needed (fertilizer animals, separate labor)
-dfFull <- dfFull[,-which(names(dfFull)%in%c("z0019s02","z0021s02","z1031s02","z5239s06","z5239s07","z5240s06","z5240s07","z7089s03","z7098s03","z8014s02","z8015s02","z8150s02","z8153s02","z8156s02"))]
+dfFull <- dfFull[,-which(names(dfFull)%in%c("z0019s02","z0021s02","z5239s06","z5239s07","z5240s06","z5240s07","z7089s03","z7098s03","z8014s02","z8015s02","z8150s02","z8153s02","z8156s02"))]
 
 # adapt names
 
@@ -30,6 +30,7 @@ names(dfFull)[which(names(dfFull)=="z2540s02")] <- "fertilizer_organic_costs"
 names(dfFull)[which(names(dfFull)=="z6119s07")] <- "agriculturalArea"
 names(dfFull)[which(names(dfFull)=="z7099s03")] <- "labor_costs"
 names(dfFull)[which(names(dfFull)=="z2559s02")] <- "pesticides_costs"
+names(dfFull)[which(names(dfFull)=="z1031s02")] <- "machines_costs"
 names(dfFull)[which(names(dfFull)=="z4040s02")] <- "ZuckerruebenFlaeche"
 names(dfFull)[which(names(dfFull)=="z4040s03")] <- "ZuckerruebenErtrag"
 names(dfFull)[which(names(dfFull)=="z4001s02")] <- "WinterweizenDinkelFlaeche"
@@ -52,6 +53,9 @@ names(dfFull)[which(names(dfFull)=="z4004s02")] <- "RoggenFlaeche"
 names(dfFull)[which(names(dfFull)=="z4004s03")] <- "RoggenErtrag"
 names(dfFull)[which(names(dfFull)=="z4026s02")] <- "SonnenblumenFlaeche"
 names(dfFull)[which(names(dfFull)=="z4026s03")] <- "SonnenblumenErtrag"
+names(dfGemuesebetrieb)[which(names(dfTestbetrieb)=="z4007s02")] <- "HaferFlaeche"
+names(dfGemuesebetrieb)[which(names(dfTestbetrieb)=="z4007s03")] <- "HaferErtrag"
+
 
 names(dfFull)
 
@@ -105,13 +109,16 @@ dfFullFocal[which(is.na(dfFullFocal$fertilizer_organic_costs)),"fertilizer_organ
 sum(is.na(dfFullFocal$croplandArea))# 0
 sum(is.na(dfFullFocal$pesticides_costs)) # 207956
 dfFullFocal[which(is.na(dfFullFocal$pesticides_costs)),"pesticides_costs"] <- 0
-sum(is.na(dfFullFocal$labor_costs)) # 207956
+sum(is.na(dfFullFocal$machines_costs)) # 1226
+dfFullFocal[which(is.na(dfFullFocal$pesticides_costs)),"machines_costs"] <- 0
+sum(is.na(dfFullFocal$labor_costs)) # 2773
 dfFullFocal[which(is.na(dfFullFocal$labor_costs)),"labor_costs"] <- 0
 
 ## recalcualte some variables
 hist(dfFullFocal$fertilizer_general_costs)
 hist(dfFullFocal$fertilizer_organic_costs)
 hist(dfFullFocal$pesticides_costs)
+hist(dfFullFocal$machines_costs)
 hist(dfFullFocal$labor_costs)
 dfFullFocal$fertilizer <- rowSums(dfFullFocal[,c("fertilizer_general_costs","fertilizer_organic_costs")],na.rm=T) # total costs for fertilizer
 
@@ -123,6 +130,7 @@ dfFullFocal$pesticides <- dfFullFocal$pesticides_costs*(-1) # invert income-inve
 
 dfFullFocal$fertilizer <- dfFullFocal$fertilizer/dfFullFocal$agriculturalArea
 dfFullFocal$pesticides <- dfFullFocal$pesticides/dfFullFocal$agriculturalArea
+dfFullFocal$machines <- dfFullFocal$machines_costs/dfFullFocal$agriculturalArea
 dfFullFocal$labor <- dfFullFocal$labor_costs/dfFullFocal$agriculturalArea
 
 unique(dfFullFocal$districtName)
@@ -136,11 +144,23 @@ table(dfFullFocal[which(dfFullFocal$districtName=="Dresden"),"production"])
 
 ## resturcture
 names(dfFullFocal)
-dfFullFocal <- dfFullFocal[,c(1:4,98:102,6,7,10:13,16,17,40:47,64:67,80,81)]
-dfFullFocalR <-  dfFullFocal %>% gather(cropVar, values,names(dfFullFocal)[10:31])
+dfFullFocal <- dfFullFocal[,c("state","year","key","districtName","REGION_ID",
+                              "production","fertilizer","pesticides","machines","labor",
+                              "WinterweizenDinkelFlaeche","WinterweizenDinkelErtrag",
+                              "HartweizenDurumFlaeche","HartweizenDurumErtrag",
+                              "RoggenFlaeche","RoggenErtrag",
+                              "SommergersteFlaeche","SommergersteErtrag",
+                              "WinterrapsFlaeche","WinterrapsErtrag",
+                              "SommerrapsundRuebsenFlaeche","SommerrapsundRuebsenErtrag",
+                              "SonnenblumenFlaeche","SonnenblumenErtrag",
+                              "SojabohnenFlaeche","SojabohnenErtrag",
+                              "KartoffelFlaeche","KartoffelErtrag",
+                              "ZuckerruebenFlaeche","ZuckerruebenErtrag",
+                              "AepfelFlaeche","AepfelErtrag")]
+dfFullFocalR <-  dfFullFocal %>% gather(cropVar, values,names(dfFullFocal)[11:32])
 head(dfFullFocalR)
 dfFullFocalR$strucpro <- "AR"
-dfFullFocalR[which(grepl("Flaeche",dfFullFocalR$cropVar)),"strucpro"] <- "YI"
+dfFullFocalR[which(grepl("Ertrag",dfFullFocalR$cropVar)),"strucpro"] <- "YI"
 dfFullFocalR$crop <- gsub("Flaeche|Ertrag","",dfFullFocalR$cropVar)
 dfFullFocalR <- dfFullFocalR[,-which(names(dfFullFocalR)=="cropVar")]
 dfFullFocalS <- dfFullFocalR %>% spread(strucpro,values)
@@ -162,10 +182,50 @@ dfActual$mode <- "konventionell"
 dfActual[which(dfActual$production==3),"mode"] <- "oekologisch"
 
 
-dfSaxony <-dfActual[which(dfActual$state==14),]
+dfSaxonyOrganic <-dfActual[which(dfActual$state==14&dfActual$mode=="oekologisch"),]
+vecCrop <- unique(dfSaxonyOrganic$crop)
 
-dfKartoffel <- dfSaxony[which(dfSaxony$crop=="Kartoffel"),]
-mod <- lm(YI~(fertilizer+pesticides+labor+mode)^2,dfKartoffel)
+lsYield <- lapply(vecCrop,function(c){
+  dfCrop <- dfSaxonyOrganic[which(dfSaxonyOrganic$crop==c),]
+  data.frame(crop=c,n=nrow(dfCrop),Mittelwert=mean(dfCrop$YI),Maximum=max(dfCrop$YI))
+})
+dfYieldSaxony <- do.call(rbind,lsYield)
+
+## only keep crops with at least 5 farms
+dfYieldSaxony <- dfYieldSaxony[which(dfYieldSaxony$n>=5),]
+
+## assume 75% of yield gap closing
+dfYieldSaxony$ErtragOptimiert <- dfYieldSaxony$Maximum*0.75
+sum(dfYieldSaxony$ErtragOptimiert>dfYieldSaxony$Mittelwert)==nrow(dfYieldSaxony)
+dfYieldSaxony$Ertragssteigerung <- (dfYieldSaxony$ErtragOptimiert/dfYieldSaxony$Mittelwert)
+hist(dfYieldSaxony$Ertragssteigerung)
+
+
+
+
+modWinterweizen <- lm(YI~fertilizer+pesticides+machines+labor,dfSaxonyOrganic[which(dfSaxonyOrganic$crop=="WinterweizenDinkel"),])
+summary(modWinterweizen)
+modHartweizen <- lm(YI~fertilizer+pesticides+machines+labor,dfSaxonyOrganic[which(dfSaxonyOrganic$crop=="HartweizenDurum"),])
+summary(modHartweizen)
+modRoggen <- lm(YI~fertilizer+pesticides+machines+labor,dfSaxonyOrganic[which(dfSaxonyOrganic$crop=="Roggen"),])
+summary(modRoggen)
+modSommergerste <- lm(YI~fertilizer+pesticides+machines+labor,dfSaxonyOrganic[which(dfSaxonyOrganic$crop=="Sommergerste"),])
+summary(modSommergerste)
+modWinterraps <- lm(YI~fertilizer+pesticides+machines+labor,dfSaxonyOrganic[which(dfSaxonyOrganic$crop=="Winterraps"),])
+summary(modWinterraps)
+modSommerraps <- lm(YI~fertilizer+pesticides+machines+labor,dfSaxonyOrganic[which(dfSaxonyOrganic$crop=="SommerrapsundRuebsen"),])
+summary(modSommerraps)
+modSonnenblumen <- lm(YI~fertilizer+pesticides+machines+labor,dfSaxonyOrganic[which(dfSaxonyOrganic$crop=="Sonnenblumen"),])
+summary(modSonnenblumen)
+modSoja <- lm(YI~fertilizer+pesticides+machines+labor,dfSaxonyOrganic[which(dfSaxonyOrganic$crop=="Sojabohnen"),])
+summary(modSoja)
+modKartoffel <- lm(YI~fertilizer+pesticides+machines+labor,dfSaxonyOrganic[which(dfSaxonyOrganic$crop=="Kartoffel"),])
+summary(modKartoffel)
+modZuckerrueben <- lm(YI~fertilizer+pesticides+machines+labor,dfSaxonyOrganic[which(dfSaxonyOrganic$crop=="Zuckerrueben"),])
+summary(modZuckerrueben)
+modAepfel <- lm(YI~fertilizer+pesticides+machines+labor,dfSaxonyOrganic[which(dfSaxonyOrganic$crop=="Aepfel"),])
+summary(modAepfel)
+
 summary(mod)
 # dfKartoffel <- aggregate(YI~year+mode,dfKartoffel,mean)
 head(dfKartoffel)

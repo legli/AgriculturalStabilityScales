@@ -5,8 +5,11 @@ library(rgdal)
 # library(raster)
 library(plyr)
 library(RColorBrewer)
-library(lme4)
+library(nlme)
 library(MuMIn)
+library(countrycode)
+library(car)
+library(grid)
 
 ## globals
 
@@ -24,30 +27,36 @@ source("scripts/functionsAnalyses.R")
 ###### Country level
 dfCountry <- read.csv("datasetsDerived/dataFinal_global.csv")
 hist(dfCountry$stability)
+dfCountry <- dfCountry[-which(dfCountry$stability%in%boxplot.stats(dfCountry$stability)$out),]
 
 dfCountryScale <- read.csv("datasetsDerived/dataScales_global.csv")
 dfCountryScale <- dfCountryScale[,c("Level","timePeriod","stability","yield","areaHarvested","prop")]
 dfCountryScale <- unique(dfCountryScale)
 names(dfCountryScale)[1] <- "Country"
+dfCountryScale <- dfCountryScale[-which(dfCountryScale$stability%in%boxplot.stats(dfCountryScale$stability)$out),]
 
 ###### Regional level
 dfRegion <- read.csv("datasetsDerived/dataFinal_europe.csv")
 dfRegion <- merge(dfRegion,dfCountry[,c("Country","timePeriod","fertilizer","irrigation")],by=c("Country","timePeriod"))
 hist(dfRegion$stability)
+dfRegion <- dfRegion[-which(dfRegion$stability%in%boxplot.stats(dfRegion$stability)$out),]
 
 dfRegionScale <- read.csv("datasetsDerived/dataScales_europe.csv")
 dfRegionScale <- dfRegionScale[,c("Level","timePeriod","stability","yield","areaHarvested","prop")]
 dfRegionScale <- unique(dfRegionScale)
 names(dfRegionScale)[1] <- "Region"
+dfRegionScale <- dfRegionScale[-which(dfRegionScale$stability%in%boxplot.stats(dfRegionScale$stability)$out),]
 
 ###### Farm level
 dfFarm <- read.csv("P:/dataFinal_farmlevel.csv")
 hist(dfFarm$stability)
+dfFarm <- dfFarm[-which(dfFarm$stability%in%boxplot.stats(dfFarm$stability)$out),]
 
 dfFarmScale <- read.csv("P:/dataScales_farm.csv")
-dfFarmScale <- dfFarmScale[,c("Area","timePeriod","stability","yield","areaHarvested","prop")]
+dfFarmScale <- dfFarmScale[,c("Level","timePeriod","stability","yield","areaHarvested","prop")]
 dfFarmScale <- unique(dfFarmScale)
-names(dfFarmScale)[1] <- "Farmer"
+names(dfFarmScale)[1] <- "Farm"
+dfFarmScale <- dfFarmScale[-which(dfFarmScale$stability%in%boxplot.stats(dfFarmScale$stability)$out),]
 
 
 ##################### Regression scale
@@ -57,6 +66,7 @@ names(dfFarmScale)[1] <- "Farmer"
 dfCountryRed <- dfCountry
 dfCountryRed$prop <- 0
 dfCountryScaleFinal <- rbind(dfCountryRed[,c("Country","timePeriod","stability","yield","areaHarvested")],dfCountryScale[,c("Country","timePeriod","stability","yield","areaHarvested")])
+
 # change area harvested to mio ha
 dfCountryScaleFinal$areaHarvested <- dfCountryScaleFinal$areaHarvested/1000000
 
@@ -98,6 +108,7 @@ r.squaredGLMM(modYieldCountryScaleMixed)
 dfRegionRed <- dfRegion
 dfRegionRed$prop <- 0
 dfRegionScaleFinal <- rbind(dfRegionRed[,c("Region","timePeriod","stability","yield","areaHarvested")],dfRegionScale[,c("Region","timePeriod","stability","yield","areaHarvested")])
+
 # change area harvested to mio ha
 dfRegionScaleFinal$areaHarvested <- dfRegionScaleFinal$areaHarvested/1000000
 
@@ -110,55 +121,70 @@ dfLogRegionScale=with(dfRegionScaleFinal,data.frame(Region,
                                                       timePeriod
 ))
 
-# scale predictors for standardized regression
-dfPredictorsRegionScale=sapply(dfLogRegionScale[,-c(1:3)],function(x)scale(x,center = T,scale=T)[,1])
-dfCenterRegionScale=data.frame(RegionCode=dfLogRegionScale[,1],stability=dfLogRegionScale[,2],yield=dfLogRegionScale[,3],dfPredictorsRegionScale)
-head(dfCenterRegionScale)
-
 ## regression models
-modStabilityRegionScale <- lm(stability~areaHarvested+timePeriod,dfCenterRegionScale)
+modStabilityRegionScale <- lm(stability~areaHarvested+timePeriod,dfLogRegionScale)
 summary(modStabilityRegionScale)
-modStabilityRegionScaleRaw <- lm(stability~areaHarvested+timePeriod,dfLogRegionScale)
-summary(modStabilityRegionScaleRaw)
-
-modYieldRegionScale <- lm(yield~areaHarvested+timePeriod,dfCenterRegionScale)
+modYieldRegionScale <- lm(yield~areaHarvested+timePeriod,dfLogRegionScale)
 summary(modYieldRegionScale)
-modYieldRegionScaleRaw <- lm(yield~areaHarvested+timePeriod,dfLogRegionScale)
-summary(modYieldRegionScaleRaw)
+
+## mixed effect model
+dfLogRegionScale$timePeriod <- factor(dfLogRegionScale$timePeriod,levels=c("1978","1988","1998","2008"))
+modStabilityRegionScaleMixed=lme(stability~areaHarvested,data=dfLogRegionScale,random=~areaHarvested|timePeriod,method="ML")
+summary(modStabilityRegionScaleMixed)
+AICc(modStabilityRegionScale,modStabilityRegionScaleMixed) # mixed effects model makes sense
+modStabilityRegionScaleMixedFixed=fixef(modStabilityRegionScaleMixed)
+modStabilityRegionScaleMixedTime <-   coef(modStabilityRegionScaleMixed)
+r.squaredGLMM(modStabilityRegionScaleMixed) 
+
+modYieldRegionScaleMixed=lme(yield~areaHarvested,data=dfLogRegionScale,random=~areaHarvested|timePeriod,method="ML")
+summary(modYieldRegionScaleMixed)
+AICc(modYieldRegionScale,modYieldRegionScaleMixed) # mixed effects model makes sense
+modYieldRegionScaleMixedFixed=fixef(modYieldRegionScaleMixed)
+modYieldRegionScaleMixedTime <-   coef(modYieldRegionScaleMixed)
+r.squaredGLMM(modYieldRegionScaleMixed) 
 
 ###### Farm level
 ### preparation
 # add original data
 dfFarmRed <- dfFarm
 dfFarmRed$prop <- 0
-dfFarmScaleFinal <- rbind(dfFarmRed[,c("Farmer","timePeriod","stability","yield","areaHarvested")],dfFarmScale[,c("Farmer","timePeriod","stability","yield","areaHarvested")])
+dfFarmScaleFinal <- rbind(dfFarmRed[,c("Farm","timePeriod","stability","yield","areaHarvested")],dfFarmScale[,c("Farm","timePeriod","stability","yield","areaHarvested")])
+
 # change area harvested to mio ha
 dfFarmScaleFinal$areaHarvested <- dfFarmScaleFinal$areaHarvested/1000000
 
 ### regression analyses
 ## transformations
-dfLogFarmScale=with(dfFarmScaleFinal,data.frame(Farmer,
+dfLogFarmScale=with(dfFarmScaleFinal,data.frame(Farm,
                                               stability = log(stability),
                                               yield = log(yield),
                                               areaHarvested, 
                                               timePeriod
 ))
 
-# scale predictors for standardized regression
-dfPredictorsFarmScale=sapply(dfLogFarmScale[,-c(1:3)],function(x)scale(x,center = T,scale=T)[,1])
-dfCenterFarmScale=data.frame(Country=dfLogFarmScale[,1],stability=dfLogFarmScale[,2],yield=dfLogFarmScale[,3],dfPredictorsFarmScale)
-head(dfCenterFarmScale)
-
 ## regression models
-modStabilityFarmScale <- lm(stability~areaHarvested+timePeriod,dfCenterFarmScale)
+modStabilityFarmScale <- lm(stability~areaHarvested+timePeriod,dfLogFarmScale)
 summary(modStabilityFarmScale)
-modStabilityFarmScaleRaw <- lm(stability~areaHarvested+timePeriod,dfLogFarmScale)
-summary(modStabilityFarmScaleRaw)
-
-modYieldFarmScale <- lm(yield~areaHarvested+timePeriod,dfCenterFarmScale)
+modYieldFarmScale <- lm(yield~areaHarvested+timePeriod,dfLogFarmScale)
 summary(modYieldFarmScale)
-modYieldFarmScaleRaw <- lm(yield~areaHarvested+timePeriod,dfLogFarmScale)
-summary(modYieldFarmScaleRaw)
+
+## mixed effect model
+dfLogFarmScale$timePeriod <- factor(dfLogFarmScale$timePeriod,levels=c("1998","2008"))
+modStabilityFarmScaleMixed=lme(stability~areaHarvested,data=dfLogFarmScale,random=~areaHarvested|timePeriod,method="ML")
+summary(modStabilityFarmScaleMixed)
+AICc(modStabilityFarmScale,modStabilityFarmScaleMixed) # mixed effects model makes sense
+modStabilityFarmScaleMixedFixed=fixef(modStabilityFarmScaleMixed)
+modStabilityFarmScaleMixedTime <-   coef(modStabilityFarmScaleMixed)
+r.squaredGLMM(modStabilityFarmScaleMixed) 
+
+modYieldFarmScaleMixed=lme(yield~areaHarvested,data=dfLogFarmScale,random=~areaHarvested|timePeriod,method="ML")
+summary(modYieldFarmScaleMixed)
+AICc(modYieldFarmScale,modYieldFarmScaleMixed) # mixed effects model makes sense
+modYieldFarmScaleMixedFixed=fixef(modYieldFarmScaleMixed)
+modYieldFarmScaleMixedTime <-   coef(modYieldFarmScaleMixed)
+r.squaredGLMM(modYieldFarmScaleMixed) 
+
+
 
 ##################### Regression combined
 ###### Country level
@@ -239,7 +265,8 @@ summary(modYieldRegionCombinedRaw)
 ### preparation
 
 # get extremes
-dfFarmCombined <- merge(dfFarmRed,dfFarmScale[which(dfFarmScale$prop==1),],by=c("Farmer","timePeriod"))
+dfFarmCombined <- merge(dfFarmRed,dfFarmScale[which(dfFarmScale$prop==1),],by=c("Farm","timePeriod"))
+dfFarmCombined <- dfFarmCombined[which(dfFarmCombined$Farm%in%unique(dfFarmScaleFinal$Farm)),]
 head(dfFarmCombined)
 dfFarmCombined$slopeStability <- dfFarmCombined$stability.y/dfFarmCombined$stability.x
 sum(dfFarmCombined$timePeriod==2008&dfFarmCombined$slopeStability<1)/sum(dfFarmCombined$timePeriod==2008)
@@ -247,12 +274,12 @@ dfFarmCombined$slopeYield <- dfFarmCombined$yield.y/dfFarmCombined$yield.x
 
 ### regression analyses
 ## transformations
-dfLogFarmCombined=with(dfFarmCombined,data.frame(Farmer,
+dfLogFarmCombined=with(dfFarmCombined,data.frame(Farm,
                                                          slopeStability = log(slopeStability),
                                                          slopeYield = log(slopeYield),
                                                          diversity, 
-                                                         irrigation=sqrt(meanIrrigation),
-                                                         fertilizer=sqrt(meanFertilizer),
+                                                         irrigation=sqrt(irrigation),
+                                                         fertilizer=sqrt(fertilizer),
                                                          instabilityTemp,instabilityPrec,
                                                          timePeriod
 ))
@@ -278,50 +305,80 @@ summary(modYieldFarmCombinedRaw)
 ### Fig 1: scale model
 vecColors <- brewer.pal(5,"PuBu")
 
-a1 <- funFig1(dfLogCountryScale,dfLogCountryScale$stability,modStabilityCountryScaleMixedTime)
-as1 <- funFig1(dfLogCountryScale,dfLogCountryScale$yield,modYieldCountryScaleMixedTime)
+a1 <- funFig1(dfLogCountryScale,dfLogCountryScale$stability,modStabilityCountryScaleMixedTime,vecColors,T)
+b1 <- funFig1(dfLogRegionScale,dfLogRegionScale$stability,modStabilityRegionScaleMixedTime,vecColors[2:5],F)
+c1 <- funFig1(dfLogFarmScale,dfLogFarmScale$stability,modStabilityFarmScaleMixedTime,vecColors[4:5],F)
 
-
-# dfNew <- data.frame(areaHarvested=rep(seq(min(dfLogCountryScale$areaHarvested),max(dfLogCountryScale$areaHarvested),length.out = 1000),5),timePeriod=factor(c(rep("1968",1000),rep("1978",1000),rep("1988",1000),rep("1998",1000),rep("2008",1000))))
-# dfNew$stability <- exp(predict(modStabilityCountryScaleMixed,newdata = dfNew))
-# dfNew <- rbind(dfNew,dfCountryScaleFinal[,c("areaHarvested","timePeriod","stability")])
-# dfNew$state <- "predicted"
-# dfNew[5001:nrow(dfNew),"state"] <- "orig"
-# a1 <- ggplot(dfNew[which(dfNew$state=="orig"),], aes(x=areaHarvested, y=stability, color = factor(timePeriod))) +
-#   geom_point(size=0.7,alpha=0.2) +
-#   geom_line(data=dfNew[which(dfNew$state=="predicted"),]) +
-#   scale_colour_manual(name="Time interval",values = vecColors, labels = c("1968-1977","1978-1987","1988-1997","1998-2007","2008-2017")) +
-#   # scale_radius(range = c(2,12)) +
-#   # geom_abline(intercept = exp(modStabilityCountryScaleMixedTime[,1]),slope = exp(modStabilityCountryScaleMixedTime[,2]),color=vecColors)+
-#   # geom_abline(intercept = summary(modDiversityLM)$coefficients[1,1],slope = summary(modDiversityLM)$coefficients[2,1],color="black",linetype=3)+
-#   theme_classic() +  
-#   xlab("Area harvested") +
-#   ylab("Stability") + 
-#   theme(axis.title.x = element_text(size=8)) +  
-#   theme(axis.text.x = element_text(size=8)) +
-#   theme(axis.title.y = element_text(size=8)) +    
-#   theme(axis.text.y = element_text(size=8)) +
-#   theme(legend.position = c(0.8, 0.17))+
-#   theme(legend.title = element_text(size = 8),
-#         legend.text = element_text(size = 8)) +
-#   theme(plot.margin = unit(c(0.2,0.2,1.5,0.2), "cm")) +
-#   theme(legend.key.size = unit(0.2,"cm"))
+as1 <- funFig1(dfLogCountryScale,dfLogCountryScale$yield,modYieldCountryScaleMixedTime,vecColors,T)
+bs1 <- funFig1(dfLogRegionScale,dfLogRegionScale$yield,modYieldRegionScaleMixedTime,vecColors[2:5],F)
+cs1 <- funFig1(dfLogFarmScale,dfLogFarmScale$yield,modYieldFarmScaleMixedTime,vecColors[4:5],F)
 
 # plot
 jpeg("results/Fig1.jpeg", width = 16.9, height = 16.9*0.3, units = 'cm', res = 600)
-  ggarrange(a1,#b1,c1,
-            labels = letters[1],font.label=list(size=8),
-            ncol = 3, nrow = 1)
+  ggarrange(a1,b1,c1,
+            labels = letters[1:3],font.label=list(size=8),
+            ncol = 3, nrow = 1,align="h")
 dev.off()
 jpeg("results/FigS1.jpeg", width = 16.9, height = 16.9*0.3, units = 'cm', res = 600)
-  ggarrange(as1,#bs1,cs1,
+  ggarrange(as1,bs1,cs1,
             labels = letters[1:3],font.label=list(size=8),
-            ncol = 3, nrow = 1)
+            ncol = 3, nrow = 1,align="h")
 dev.off()
 
 
 ### Fig 2
+g.legend <- ggplot(grd, aes(dim1,dim2,fill=factor(1:9)))+
+  geom_tile()+
+  scale_fill_manual(values=grd$color)+
+  theme_void()+
+  theme(legend.position="none",axis.title=element_text(size=5),
+        panel.background=element_blank(),plot.margin=margin(t=10,b=10,l=10))+
+  theme(axis.title=element_text(color="black",size=8),
+        axis.title.y = element_text(angle = 90))+
+  labs(x="Stability level",y="Stability overall") 
+# theme(axis.title=element_text(size=8))
+
+vp<-viewport(width=0.24,height=0.4,x=0.12,y=0.3)
+
+
 mapCountry <- readOGR("spatial/countries_global.shp")
+mapCountry$Country <-  countrycode(mapCountry$Area, 'country.name', 'iso3c')
+dfCountryAgg <- aggregate(cbind(stability.x,stability.y)~Country,dfCountryCombined,mean)
+
+mapRegion <- readOGR("spatial/regions_europe.shp")
+mapRegion$Region <- mapRegion$NUTS_ID
+dfRegionAgg <- aggregate(cbind(stability.x,stability.y)~Region,dfRegionCombined,mean)
+
+a2 <- funFig2(dfCountryAgg,"stability",mapCountry,"Country")
+b2 <- funFig2(dfRegionAgg,"stability",mapRegion,"Region")
+
+# jpeg("results/Fig2.jpeg", width = 16.9, height = 16.9*0.3, units = 'cm', res = 600)
+jpeg("results/Fig2.jpeg", res = 600)
+
+ggarrange(a2,b2,
+          labels = letters[1:3],font.label=list(size=8),
+          ncol = 1, nrow = 2,align="h")
+print(g.legend,vp=vp)
+# grid.arrange(a2, b2, nrow = 2)
+dev.off()
+
+
+
+
+merge_with_shape <- function(df, shape, by) {
+  merge(shape, df, by=by, sort=FALSE) %>% st_as_sf
+}
+
+
+plotG <- ggplot(df, aes(fill = as.numeric(variable_to_plot)))+
+  geom_sf(color = "grey", size = 0.001)+
+  coord_sf(xlim = c(-125, -60), ylim = c(20,50))+
+  scale_fill_gradient(low = "#ef8a62", high = "#67a9cf")+
+  theme_bw()
+
+US_EU_N <- grid.arrange(EUplot, USplot, nrow = 2)
+
+
 mapCountry <- getMap()
 
 mapCountry$Country <- mapCountry$ISO3
@@ -352,7 +409,7 @@ jpeg("results/FigS3.jpeg", width = 16.9, height = 16.9*0.3, units = 'cm', res = 
 dev.off()
 
 
-### Fig 3: predict if scale minimization can be buffered by diversification
+### Fig 4: predict if scale minimization can be buffered by diversification
 # spatial
 mapCountry <- readOGR("spatial/countries_global.shp")
 mapCountry$Area <- factor(as.character(mapCountry$Area))
@@ -394,14 +451,6 @@ dev.off()
 #   
 
 ######## Tables
-
-Table1a <- funTables(modStabilityCountryRaw,modStabilityRegionRaw,modStabilityFarmRaw,5, c("(Intercept)","Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time"))
-Table1b <- funTables(modStabilityCountryScaleRaw,modStabilityRegionScaleRaw,modStabilityFarmScaleRaw,5, c("(Intercept)","Area harvested","Time"))
-write.csv(rbind(Table1a,Table1b),"results/Table1.csv")
-TableS1a <- funTables(modYieldCountryRaw,modYieldRegionRaw,modYieldFarmRaw,6, c("(Intercept)","Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time"))
-TableS1b <- funTables(modYieldCountryScaleRaw,modYieldRegionScaleRaw,modYieldFarmScaleRaw,6, c("(Intercept)","Area harvested","Time"))
-write.csv(rbind(TableS1a,TableS1b),"results/TableS1.csv")
-
 Table2 <- funTables(modStabilityCountryCombinedRaw,modStabilityRegionCombinedRaw,modStabilityFarmCombinedRaw,4, c("(Intercept)","Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time"))
 write.csv(Table2,"results/Table2.csv")
 TableS2 <- funTables(modYieldCountryCombinedRaw,modYieldRegionCombinedRaw,modYieldFarmCombinedRaw,4, c("(Intercept)","Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time"))

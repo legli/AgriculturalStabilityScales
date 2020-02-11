@@ -306,23 +306,86 @@ funLegend <- function(title)
 }
 
 
-funFig1 <- function(df,response,effect)
+funFig1 <- function(df,response,effect,colorVector,Legend)
 {
-  ggplot(df, aes(x=areaHarvested, y=response, color = factor(timePeriod))) +
+  fig <- ggplot(df, aes(x=areaHarvested, y=response, color = factor(timePeriod))) +
     geom_point(size=0.3,alpha=0.2) +
-    scale_colour_manual(name="Time interval",values = vecColors, labels = c("1968-1977","1978-1987","1988-1997","1998-2007","2008-2017")) +
+    scale_colour_manual(name="Time interval",values = colorVector, labels = c("1968-1977","1978-1987","1988-1997","1998-2007","2008-2017")) +
     scale_radius(range = c(2,12)) +
-    geom_abline(intercept = effect[,1],slope = effect[,2],color=vecColors)+
+    geom_abline(intercept = effect[,1],slope = effect[,2],color=colorVector)+
     theme_classic() +
-    xlab("Area harvested") +
-    ylab("Stability") +
+    xlab("Area harvested (Mio. ha)") +
+    ylab("log(Stability)") +
     theme(axis.title.x = element_text(size=8)) +
     theme(axis.text.x = element_text(size=8)) +
     theme(axis.title.y = element_text(size=8)) +
-    theme(axis.text.y = element_text(size=8)) +
-    theme(legend.position = c(0.8, 0.17))+
-    theme(legend.title = element_text(size = 8),
-          legend.text = element_text(size = 8)) +
-    theme(plot.margin = unit(c(0.2,0.2,1.5,0.2), "cm")) +
-    theme(legend.key.size = unit(0.2,"cm"))
+    theme(axis.text.y = element_text(size=8)) 
+
+  
+  if (Legend)
+  {
+    fig <- fig +  theme(legend.position = c(0.8, 0.17))+
+      theme(legend.title = element_text(size = 8),
+            legend.text = element_text(size = 8)) +
+      theme(plot.margin = unit(c(0.2,0.2,1.5,0.2), "cm")) +
+      theme(legend.key.size = unit(0.2,"cm"))
+  }
+  
+  if (!Legend)
+  {
+    fig <- fig + theme(legend.position = "none")
+  }  
+  fig  
+  
+}
+
+
+
+## bivariate maps
+grd <- rbind(data.frame(dim2=3,dim1=3,color="#3F2949"),
+             data.frame(dim2=2,dim1=3,color="#435786"),
+             data.frame(dim2=1,dim1=3,color="#4885C1"),
+             data.frame(dim2=3,dim1=2,color="#77324C"),
+             data.frame(dim2=2,dim1=2,color="#806A8A"),
+             data.frame(dim2=1,dim1=2,color="#89A1C8"),
+             data.frame(dim2=3,dim1=1,color="#AE3A4E"),
+             data.frame(dim2=2,dim1=1,color="#BC7C8F"),
+             data.frame(dim2=1,dim1=1,color="#CABED0"))
+grd$color <- as.character(grd$color)
+
+
+
+funFig2 <- function(dfTarget,variable,map,level)
+{
+  
+  ## extract most recent period
+  # dfGroups <- dfTarget[which(dfTarget$timePeriod==2008),]
+
+  ## calculate quantiles
+
+  
+  trintVariableX <- as.numeric(quantile(dfTarget[,c(paste0(variable,".x"))],probs=seq(0,1,length.out = 4)))
+  trintVariableY <- as.numeric(quantile(dfTarget[,c(paste0(variable,".y"))],probs=seq(0,1,length.out = 4)))
+  # trintVariable <- c(0,30,60,1000)
+  
+  dfTarget$dim1 <-car::recode(dfTarget[,paste0(variable,".x")],"trintVariableX[1]:trintVariableX[2]=1; trintVariableX[2]:trintVariableX[3]=2; trintVariableX[3]:trintVariableX[4]=3;")
+  dfTarget$dim2 <-car::recode(dfTarget[,paste0(variable,".y")],"trintVariableY[1]:trintVariableY[2]=1; trintVariableY[2]:trintVariableY[3]=2; trintVariableY[3]:trintVariableY[4]=3;")
+  
+  ## join to map
+  dfTargetFinal <- merge(dfTarget[,c(level, "dim1","dim2")],grd)
+  head(dfTargetFinal)
+  dfTargetFinal$id <- as.character(dfTargetFinal[,level])
+  mapsBivariate <- fortify(map,region=level)
+  mapsBivariate = join(mapsBivariate, dfTargetFinal[,c("id","color")], by="id")
+  
+  fig <- ggplot() +
+    geom_map(data = mapsBivariate, map = mapsBivariate,
+             aes(x = long, y = lat,  map_id=id, fill=factor(color)),
+             colour = "#7f7f7f", size=0.05) +
+    scale_fill_identity()+
+    theme_void()+
+    theme(legend.position="none")
+  
+  fig
+  
 }

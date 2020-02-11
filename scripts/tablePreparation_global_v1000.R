@@ -80,17 +80,16 @@ dfProduction <- dfProduction[-which(dfProduction$AreaHarvested==0 |  dfProductio
 
 # add calories and make crops consistent with target crop file
 dfCalories <- read.csv("datasets/targetCrops_global.csv")
-head(dfCalories) # Group2 is the target crop name
-names(dfCalories)[2] <- "Item"
-dfCalories <- dfCalories[which(!is.na(dfCalories$Group2)&!is.na(dfCalories$Calories)),]
+head(dfCalories) 
+dfCalories <- dfCalories[which(!is.na(dfCalories$Calories_kcal_t)),]
 setdiff(dfProduction$Item,dfCalories$Item)
 
 # subset crops without calories
-dfProduction <- merge(dfProduction,dfCalories[,c("Item","Calories")],by="Item")
+dfProduction <- merge(dfProduction,dfCalories[,c("Item","Calories_kcal_t")],by="Item")
 names(dfProduction)
 
 # change production to calories
-dfProduction$Production <- dfProduction$Production*dfProduction$Calories
+dfProduction$Production <- dfProduction$Production*dfProduction$Calories_kcal_t
 # calculate individual yields and remove very unrealistic values
 dfProduction$Yield <-dfProduction$Production / dfProduction$AreaHarvested
 hist(dfProduction$Yield)
@@ -98,9 +97,6 @@ dfProduction<-dfProduction[dfProduction$Yield<1e+08,]
 
 # keep necessary columns only 
 dfProduction <- dfProduction[,c("Level","Item","Year","AreaHarvested","Production")]
-
-# Remove Spices, nes and onions dry 
-dfProduction<-dfProduction[-which(dfProduction$Item%in%c("Spices, nes","Onions, dry")),]
 
 # only keep crops with 10 entries per time period
 dfProduction$timePeriod=0

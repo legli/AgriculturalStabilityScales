@@ -25,7 +25,7 @@ lsAll <- lapply(vecLevelFinal,function(lev){
       lsScales <- lapply(seq(0.1,1,0.1),function(p){
         lsProp <- lapply(1:5,function(s){
           randomCountries <- c(lev,sample(vecLevelItem[-which(vecLevelItem==lev)],p*(length(vecLevelItem)-1)))
-          dfProductionRegion <- dfProductionWorldTime[which(dfProductionWorldTime$Level%in%randomCountries),]
+          dfProductionRegion <- dfProductionWorldTime[which(dfProductionWorldTime$Level%in%randomCountries&dfProductionWorldTime$Item%in%vecItem),]
           dfProductionRegionAgg <- aggregate(cbind(Production,AreaHarvested)~Year,dfProductionRegion,sum)
           dfProductionRegionAgg$Yield <- dfProductionRegionAgg$Production/dfProductionRegionAgg$AreaHarvested
           dfProductionRegionAgg$YieldDet <-resid(lm(Yield ~ Year^2,data=dfProductionRegionAgg)) 
@@ -72,7 +72,7 @@ lsAllEurope <- lapply(vecLevelFinal,function(lev){
       lsScales <- lapply(seq(0.1,1,0.1),function(p){
         lsProp <- lapply(1:5,function(s){
           randomCountries <- c(lev,sample(vecLevelItem[-which(vecLevelItem==lev)],p*(length(vecLevelItem)-1)))
-          dfProductionRegion <- dfProductionWorldTime[which(dfProductionWorldTime$Level%in%randomCountries),]
+          dfProductionRegion <- dfProductionWorldTime[which(dfProductionWorldTime$Level%in%randomCountries&dfProductionWorldTime$Item%in%vecItem),]
           dfProductionRegionAgg <- aggregate(cbind(Production,AreaHarvested)~Year,dfProductionRegion,sum)
           dfProductionRegionAgg$Yield <- dfProductionRegionAgg$Production/dfProductionRegionAgg$AreaHarvested
           dfProductionRegionAgg$YieldDet <-resid(lm(Yield ~ Year^2,data=dfProductionRegionAgg)) 
@@ -102,12 +102,12 @@ write.csv(dfAllEurope, "datasetsDerived/dataScales_europe.csv",row.names=F)
 ############# Farm level
 #### load releant data
 
-load("P:/dfProductionFullFinal_farm.RData")
+load("P:/dfProduction_farm.RData")
 
 
 ## summarize per time frame 
 vecLevelFinal <- unique(dfProduction$Level)
-lsAllFarm <- lapply(sample(vecLevelFinal,1000),function(lev){
+lsAllFarm <- lapply(sample(vecLevelFinal,750),function(lev){
   # detrend yields
   show(lev)
   lsTime <- lapply(c(1998,2008),function(yearStart){
@@ -120,7 +120,7 @@ lsAllFarm <- lapply(sample(vecLevelFinal,1000),function(lev){
       lsScales <- lapply(seq(0.1,1,0.1),function(p){
         lsProp <- lapply(1:5,function(s){
           randomCountries <- c(lev,sample(vecLevelItem[-which(vecLevelItem==lev)],p*(length(vecLevelItem)-1)))
-          dfProductionRegion <- dfProductionWorldTime[which(dfProductionWorldTime$Level%in%randomCountries),]
+          dfProductionRegion <- dfProductionWorldTime[which(dfProductionWorldTime$Level%in%randomCountries&dfProductionWorldTime$Item%in%vecItem),]
           dfProductionRegionAgg <- aggregate(cbind(Production,AreaHarvested)~Year,dfProductionRegion,sum)
           dfProductionRegionAgg$Yield <- dfProductionRegionAgg$Production/dfProductionRegionAgg$AreaHarvested
           dfProductionRegionAgg$YieldDet <-resid(lm(Yield ~ Year^2,data=dfProductionRegionAgg)) 
