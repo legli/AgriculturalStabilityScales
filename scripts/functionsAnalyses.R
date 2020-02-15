@@ -205,30 +205,88 @@ funTables <- function(modN,modS,modF,r,nam)
   
 }
 
-funPredictCountry <- function(dfPred,mod,slope)
+# funPredictCountry <- function(dfPred,mod,slope)
+# {
+#   dfPredictDiversity <- dfPred
+#   maxDiversity <- max(dfPredictDiversity$diversity)
+#   dfPredictDiversity[which(dfPredictDiversity$diversity<maxDiversity*0.5),"diversity"] <- maxDiversity*0.5
+#   dfPredictDiversity$fitDiversity1 <-  exp(as.numeric(predict(mod,newdata = dfPredictDiversity[,2:7])))
+#   dfPredictDiversity[which(dfPredictDiversity$diversity<maxDiversity*0.75),"diversity"] <- maxDiversity*0.75
+#   dfPredictDiversity$fitDiversity2 <-  exp(as.numeric(predict(mod,newdata = dfPredictDiversity[,2:7])))
+#   dfPredictDiversity[which(dfPredictDiversity$diversity<maxDiversity),"diversity"] <- maxDiversity
+#   dfPredictDiversity$fitDiversity3 <-  exp(as.numeric(predict(mod,newdata = dfPredictDiversity[,2:7])))  
+#   
+#   dfPredictFinal <- merge(dfNationalCombined[which(dfNationalCombined$timePeriod==2008),c("Country",slope)],dfPredictDiversity[,c("Country","fitDiversity1","fitDiversity2","fitDiversity3")])
+#   
+#   dfPredictFinal$dim1 <-car::recode(dfPredictFinal[,slope],"0:0.25=1; 0.25:0.5=2; 0.5:0.75=3;0.75:0.95=4;0.95:1.05=5;1.05:1.3333333=6;1.3333333:2=7;2:4=8;4:100=9;")
+#   dfPredictFinal$dim1 <- vecColMap[dfPredictFinal$dim1]
+#   dfPredictFinal$dim2 <-car::recode(dfPredictFinal$fitDiversity1,"0:0.25=1; 0.25:0.5=2; 0.5:0.75=3;0.75:0.95=4;0.95:1.05=5;1.05:1.3333333=6;1.3333333:2=7;2:4=8;4:100=9;")
+#   dfPredictFinal$dim2 <- vecColMap[dfPredictFinal$dim2]
+#   dfPredictFinal$dim3 <-car::recode(dfPredictFinal$fitDiversity2,"0:0.25=1; 0.25:0.5=2; 0.5:0.75=3;0.75:0.95=4;0.95:1.05=5;1.05:1.3333333=6;1.3333333:2=7;2:4=8;4:100=9;")
+#   dfPredictFinal$dim3 <- vecColMap[dfPredictFinal$dim3]
+#   dfPredictFinal$dim4 <-car::recode(dfPredictFinal$fitDiversity3,"0:0.25=1; 0.25:0.5=2; 0.5:0.75=3;0.75:0.95=4;0.95:1.05=5;1.05:1.3333333=6;1.3333333:2=7;2:4=8;4:100=9;")
+#   dfPredictFinal$dim4 <- vecColMap[dfPredictFinal$dim4]
+#   dfPredictFinal$id <- factor(dfPredictFinal$Country)
+#   
+#   dfPredictFinal
+# }
+
+
+funPredictCountry <- function(dfPred,mod,factor,lev)
 {
-  dfPredictDiversity <- dfPred
-  maxDiversity <- max(dfPredictDiversity$diversity)
-  dfPredictDiversity[which(dfPredictDiversity$diversity<maxDiversity*0.5),"diversity"] <- maxDiversity*0.5
-  dfPredictDiversity$fitDiversity1 <-  exp(as.numeric(predict(mod,newdata = dfPredictDiversity[,2:7])))
-  dfPredictDiversity[which(dfPredictDiversity$diversity<maxDiversity*0.75),"diversity"] <- maxDiversity*0.75
-  dfPredictDiversity$fitDiversity2 <-  exp(as.numeric(predict(mod,newdata = dfPredictDiversity[,2:7])))
-  dfPredictDiversity[which(dfPredictDiversity$diversity<maxDiversity),"diversity"] <- maxDiversity
-  dfPredictDiversity$fitDiversity3 <-  exp(as.numeric(predict(mod,newdata = dfPredictDiversity[,2:7])))  
+  dfPredict <- dfPred
+  dfPredict$fitOriginal <-  exp(as.numeric(predict(mod,newdata = dfPredict[,2:7])))
+  dfPredict$diversityOld <- dfPredict$diversity
+  dfPredict$fertilizerOld <- dfPredict$fertilizer
+  dfPredict$irrigationOld <- dfPredict$irrigation
+  maxDiversity <- max(dfPredict$diversity)*factor
+  dfPredict[which(dfPredict$diversity<=maxDiversity),"diversity"] <- maxDiversity
+  dfPredict$fitDiversity <-  exp(as.numeric(predict(mod,newdata = dfPredict[,2:7])))
+  dfPredict$diversity <- dfPredict$diversityOld
+  maxFertilizer <- max(dfPredict$fertilizer)*factor
+  dfPredict[which(dfPredict$fertilizer<=maxFertilizer),"fertilizer"] <- maxFertilizer
+  dfPredict$fitFertilizer <-  exp(as.numeric(predict(mod,newdata = dfPredict[,2:7])))
+  dfPredict$fertilizer <- dfPredict$fertilizerOld
+  maxIrrigation <- max(dfPredict$irrigation)*factor
+  dfPredict[which(dfPredict$irrigation<=maxIrrigation),"irrigation"] <- maxIrrigation
+  dfPredict$fitIrrigation <-  exp(as.numeric(predict(mod,newdata = dfPredict[,2:7])))
+  dfPredict$irrigation <- dfPredict$irrigationOld
+  dfPredict[which(dfPredict$diversity<=maxDiversity),"diversity"] <- maxDiversity
+  dfPredict[which(dfPredict$fertilizer<=maxFertilizer),"fertilizer"] <- maxFertilizer
+  dfPredict[which(dfPredict$irrigation<=maxIrrigation),"irrigation"] <- maxIrrigation
+  dfPredict$fitAll <-  exp(as.numeric(predict(mod,newdata = dfPredict[,2:7])))
   
-  dfPredictFinal <- merge(dfNationalCombined[which(dfNationalCombined$timePeriod==2008),c("Country",slope)],dfPredictDiversity[,c("Country","fitDiversity1","fitDiversity2","fitDiversity3")])
+  dfFinal = rbind(
+    data.frame(slope=dfPredict$fitOriginal,scenario="Original",level=lev),
+    data.frame(slope=dfPredict$fitFertilizer,scenario="Diversity",level=lev),
+    data.frame(slope=dfPredict$fitDiversity,scenario="Fertilizer",level=lev),
+    data.frame(slope=dfPredict$fitIrrigation,scenario="Irrigation",level=lev),
+    data.frame(slope=dfPredict$fitAll,scenario="All",level=lev))
   
-  dfPredictFinal$dim1 <-car::recode(dfPredictFinal[,slope],"0:0.25=1; 0.25:0.5=2; 0.5:0.75=3;0.75:0.95=4;0.95:1.05=5;1.05:1.3333333=6;1.3333333:2=7;2:4=8;4:100=9;")
-  dfPredictFinal$dim1 <- vecColMap[dfPredictFinal$dim1]
-  dfPredictFinal$dim2 <-car::recode(dfPredictFinal$fitDiversity1,"0:0.25=1; 0.25:0.5=2; 0.5:0.75=3;0.75:0.95=4;0.95:1.05=5;1.05:1.3333333=6;1.3333333:2=7;2:4=8;4:100=9;")
-  dfPredictFinal$dim2 <- vecColMap[dfPredictFinal$dim2]
-  dfPredictFinal$dim3 <-car::recode(dfPredictFinal$fitDiversity2,"0:0.25=1; 0.25:0.5=2; 0.5:0.75=3;0.75:0.95=4;0.95:1.05=5;1.05:1.3333333=6;1.3333333:2=7;2:4=8;4:100=9;")
-  dfPredictFinal$dim3 <- vecColMap[dfPredictFinal$dim3]
-  dfPredictFinal$dim4 <-car::recode(dfPredictFinal$fitDiversity3,"0:0.25=1; 0.25:0.5=2; 0.5:0.75=3;0.75:0.95=4;0.95:1.05=5;1.05:1.3333333=6;1.3333333:2=7;2:4=8;4:100=9;")
-  dfPredictFinal$dim4 <- vecColMap[dfPredictFinal$dim4]
-  dfPredictFinal$id <- factor(dfPredictFinal$Country)
   
-  dfPredictFinal
+  # dfPredict$dim1 <-car::recode(dfPredict$fitDiversity,"0:0.25=1; 0.25:0.5=2; 0.5:0.75=3;0.75:0.95=4;0.95:1.05=5;1.05:1.3333333=6;1.3333333:2=7;2:4=8;4:100=9;")
+  # dfPredict$dim1 <- vecColMap[dfPredict$dim1]
+  # dfPredict$dim2 <-car::recode(dfPredict$fitFertilizer,"0:0.25=1; 0.25:0.5=2; 0.5:0.75=3;0.75:0.95=4;0.95:1.05=5;1.05:1.3333333=6;1.3333333:2=7;2:4=8;4:100=9;")
+  # dfPredict$dim2 <- vecColMap[dfPredict$dim2]
+  # dfPredict$dim3 <-car::recode(dfPredict$fitIrrigation,"0:0.25=1; 0.25:0.5=2; 0.5:0.75=3;0.75:0.95=4;0.95:1.05=5;1.05:1.3333333=6;1.3333333:2=7;2:4=8;4:100=9;")
+  # dfPredict$dim3 <- vecColMap[dfPredict$dim3]
+  # dfPredict$dim4 <-car::recode(dfPredict$fitAll,"0:0.25=1; 0.25:0.5=2; 0.5:0.75=3;0.75:0.95=4;0.95:1.05=5;1.05:1.3333333=6;1.3333333:2=7;2:4=8;4:100=9;")
+  # dfPredict$dim4 <- vecColMap[dfPredict$dim4]
+  
+  
+  # dfPredictDiversity[which(dfPredictDiversity$diversity<maxDiversity*0.75),"diversity"] <- maxDiversity*0.75
+  # dfPredictDiversity$fitDiversity2 <-  exp(as.numeric(predict(mod,newdata = dfPredictDiversity[,2:7])))
+  # dfPredictDiversity[which(dfPredictDiversity$diversity<maxDiversity),"diversity"] <- maxDiversity
+  # dfPredictDiversity$fitDiversity3 <-  exp(as.numeric(predict(mod,newdata = dfPredictDiversity[,2:7])))  
+  # 
+  # dfPredictDiversity$dim1 <-car::recode(dfPredictDiversity$fitDiversity1,"0:0.25=1; 0.25:0.5=2; 0.5:0.75=3;0.75:0.95=4;0.95:1.05=5;1.05:1.3333333=6;1.3333333:2=7;2:4=8;4:100=9;")
+  # dfPredictDiversity$dim1 <- vecColMap[dfPredictDiversity$dim1]
+  # dfPredictDiversity$dim2 <-car::recode(dfPredictDiversity$fitDiversity2,"0:0.25=1; 0.25:0.5=2; 0.5:0.75=3;0.75:0.95=4;0.95:1.05=5;1.05:1.3333333=6;1.3333333:2=7;2:4=8;4:100=9;")
+  # dfPredictDiversity$dim2 <- vecColMap[dfPredictDiversity$dim2]
+  # dfPredictDiversity$dim3 <-car::recode(dfPredictDiversity$fitDiversity3,"0:0.25=1; 0.25:0.5=2; 0.5:0.75=3;0.75:0.95=4;0.95:1.05=5;1.05:1.3333333=6;1.3333333:2=7;2:4=8;4:100=9;")
+  # dfPredictDiversity$dim3 <- vecColMap[dfPredictDiversity$dim3]
+
+  dfFinal
 }
 
 # funPredictCountry <- function(dfPred,mod,slope)
@@ -277,14 +335,26 @@ funPredictCountry <- function(dfPred,mod,slope)
 #   dfPredictFinal
 # }
 
-funMapPlot <- function(map,dim)
+funMapPlot <- function(map,dim,lab)
 {
-  ggplot() +
-  geom_map(data = map, map = map,
-           aes(x = long, y = lat,  map_id=id, fill=dim),
-           colour = "#7f7f7f", size=0.05) +
-  scale_fill_identity()+
-  theme_void()
+  # ggplot() +
+  # geom_map(data = map, map = map,
+  #          aes(x = long, y = lat,  map_id=id, fill=dim),
+  #          colour = "#7f7f7f", size=0.05) +
+  # scale_fill_identity()+
+  # theme_void()
+  
+  ggplot() + 
+    geom_sf(data = mapCountrySF, fill = "white",size=0.1) +
+    geom_sf(data = map, aes(fill = factor(dim)),size=0.1) +
+    scale_fill_identity()+
+    theme_void() +
+    theme(legend.position="none") +
+    coord_sf(xlim = extent(mapsBivariate)[1:2],
+             ylim = extent(mapsBivariate)[3:4])+
+    labs(title = lab)+
+    theme(title = element_text(hjust = 0, face= "bold",size=8))
+  
 }
 
 funLegend <- function(title)
@@ -355,37 +425,43 @@ grd$color <- as.character(grd$color)
 
 
 
-funFig2 <- function(dfTarget,variable,map,level)
+funFig2 <- function(dfInput,variable,map,level,lab)
 {
   
   ## extract most recent period
   # dfGroups <- dfTarget[which(dfTarget$timePeriod==2008),]
 
   ## calculate quantiles
-
+  dfTarget <- dfInput
   
-  trintVariableX <- as.numeric(quantile(dfTarget[,c(paste0(variable,".x"))],probs=seq(0,1,length.out = 4)))
-  trintVariableY <- as.numeric(quantile(dfTarget[,c(paste0(variable,".y"))],probs=seq(0,1,length.out = 4)))
+  trintVariableX <- as.numeric(quantile(dfTarget[,variable],probs=seq(0,1,length.out = 4)))
+  trintVariableY <- as.numeric(quantile(dfTarget[,paste0(variable,"Overall")],probs=seq(0,1,length.out = 4)))
   # trintVariable <- c(0,30,60,1000)
   
-  dfTarget$dim1 <-car::recode(dfTarget[,paste0(variable,".x")],"trintVariableX[1]:trintVariableX[2]=1; trintVariableX[2]:trintVariableX[3]=2; trintVariableX[3]:trintVariableX[4]=3;")
-  dfTarget$dim2 <-car::recode(dfTarget[,paste0(variable,".y")],"trintVariableY[1]:trintVariableY[2]=1; trintVariableY[2]:trintVariableY[3]=2; trintVariableY[3]:trintVariableY[4]=3;")
-  
+  dfTarget$dim1 <- 1
+  dfTarget[which(dfTarget[,variable]>trintVariableX[2]&dfTarget[,variable]<=trintVariableX[3]),"dim1"] <- 2
+  dfTarget[which(dfTarget[,variable]>trintVariableX[3]),"dim1"] <- 3
+  dfTarget$dim2 <- 1
+  dfTarget[which(dfTarget[,paste0(variable,"Overall")]>trintVariableY[2]&dfTarget[,variable]<=trintVariableY[3]),"dim2"] <- 2
+  dfTarget[which(dfTarget[,paste0(variable,"Overall")]>trintVariableY[3]),"dim2"] <- 3  
+
   ## join to map
   dfTargetFinal <- merge(dfTarget[,c(level, "dim1","dim2")],grd)
   head(dfTargetFinal)
-  dfTargetFinal$id <- as.character(dfTargetFinal[,level])
   mapsBivariate <- fortify(map,region=level)
-  mapsBivariate = join(mapsBivariate, dfTargetFinal[,c("id","color")], by="id")
+  mapsBivariate = merge(mapsBivariate, dfTargetFinal[,c(level,"color")], by=level)
   
-  fig <- ggplot() +
-    geom_map(data = mapsBivariate, map = mapsBivariate,
-             aes(x = long, y = lat,  map_id=id, fill=factor(color)),
-             colour = "#7f7f7f", size=0.05) +
+  
+  fig = ggplot() + 
+    geom_sf(data = st_as_sf(mapCountry), fill = "white",size=0.1) +
+    geom_sf(data = mapsBivariate, aes(fill = factor(color)),size=0.1) +
     scale_fill_identity()+
-    theme_void()+
-    theme(legend.position="none")
-  
+    theme_void() +
+    theme(legend.position="none") +
+    coord_sf(xlim = extent(mapsBivariate)[1:2],
+             ylim = extent(mapsBivariate)[3:4])+
+    labs(title = lab)+
+    theme(title = element_text(hjust = 0, face= "bold",size=8))
+    
   fig
-  
 }
