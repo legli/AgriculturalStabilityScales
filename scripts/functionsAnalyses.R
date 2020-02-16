@@ -232,9 +232,10 @@ funTables <- function(modN,modS,modF,r,nam)
 # }
 
 
-funPredictCountry <- function(dfPred,mod,factor,lev)
+funPredictCountry <- function(ar,dfPred,mod,factor,lev)
 {
   dfPredict <- dfPred
+  reg <- dfPredict[,ar]
   dfPredict$fitOriginal <-  exp(as.numeric(predict(mod,newdata = dfPredict[,2:7])))
   dfPredict$diversityOld <- dfPredict$diversity
   dfPredict$fertilizerOld <- dfPredict$fertilizer
@@ -253,15 +254,21 @@ funPredictCountry <- function(dfPred,mod,factor,lev)
   dfPredict$irrigation <- dfPredict$irrigationOld
   dfPredict[which(dfPredict$diversity<=maxDiversity),"diversity"] <- maxDiversity
   dfPredict[which(dfPredict$fertilizer<=maxFertilizer),"fertilizer"] <- maxFertilizer
-  dfPredict[which(dfPredict$irrigation<=maxIrrigation),"irrigation"] <- maxIrrigation
+  if (lev=="Country")
+  {
+    dfPredict[which(dfPredict$irrigation<=maxIrrigation),"irrigation"] <- maxIrrigation
+  }
   dfPredict$fitAll <-  exp(as.numeric(predict(mod,newdata = dfPredict[,2:7])))
   
   dfFinal = rbind(
-    data.frame(slope=dfPredict$fitOriginal,scenario="Original",level=lev),
-    data.frame(slope=dfPredict$fitFertilizer,scenario="Diversity",level=lev),
-    data.frame(slope=dfPredict$fitDiversity,scenario="Fertilizer",level=lev),
-    data.frame(slope=dfPredict$fitIrrigation,scenario="Irrigation",level=lev),
-    data.frame(slope=dfPredict$fitAll,scenario="All",level=lev))
+    data.frame(Area=reg,slope=dfPredict$fitOriginal,scenario="Original",plot="Diversity",level=lev),
+    data.frame(Area=reg,slope=dfPredict$fitOriginal,scenario="Original",plot="Fertilizer",level=lev),
+    data.frame(Area=reg,slope=dfPredict$fitOriginal,scenario="Original",plot="Irrigation",level=lev),
+    data.frame(Area=reg,slope=dfPredict$fitOriginal,scenario="Original",plot="All",level=lev),
+    data.frame(Area=reg,slope=dfPredict$fitFertilizer,scenario="Scenario",plot="Diversity",level=lev),
+    data.frame(Area=reg,slope=dfPredict$fitDiversity,scenario="Scenario",plot="Fertilizer",level=lev),
+    data.frame(Area=reg,slope=dfPredict$fitIrrigation,scenario="Scenario",plot="Irrigation",level=lev),
+    data.frame(Area=reg,slope=dfPredict$fitAll,scenario="Scenario",plot="All",level=lev))
   
   
   # dfPredict$dim1 <-car::recode(dfPredict$fitDiversity,"0:0.25=1; 0.25:0.5=2; 0.5:0.75=3;0.75:0.95=4;0.95:1.05=5;1.05:1.3333333=6;1.3333333:2=7;2:4=8;4:100=9;")
@@ -345,7 +352,7 @@ funMapPlot <- function(map,dim,lab)
   # theme_void()
   
   ggplot() + 
-    geom_sf(data = mapCountrySF, fill = "white",size=0.1) +
+    geom_sf(data = st_as_sf(mapCountry), fill = "white",size=0.1) +
     geom_sf(data = map, aes(fill = factor(dim)),size=0.1) +
     scale_fill_identity()+
     theme_void() +
