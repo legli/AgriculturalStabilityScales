@@ -19,7 +19,6 @@ str(dfFull)
 dfFull <- dfFull[,-which(names(dfFull)%in%c("z0019s02","z0021s02","z1031s02","z2539s02","z2540s02","z2559s02","z5239s06","z5239s07","z5240s06","z5240s07","z7089s03","z7098s03","z7099s03","z8014s02","z8015s02","z8150s02","z8153s02","z8156s02"))]
 
 # adapt names
-
 names(dfFull)[which(names(dfFull)=="jahr")] <- "Jahr"
 names(dfFull)[which(names(dfFull)=="z0003s02")] <- "Bundesland"
 names(dfFull)[which(names(dfFull)=="z0004s02")] <- "Regierungsbezirk"
@@ -108,6 +107,7 @@ dfActual <- dfActual[which(dfActual$cropTestbetrieb%in%vecCrop),]
 length(unique(dfActual$cropTestbetrieb))==length(vecCrop)
 
 dfActual$Anbaumethode <- "konventionell"
+dfActual[which(dfActual$Methode==2),"Anbaumethode"] <- "uebergang"
 dfActual[which(dfActual$Methode==3),"Anbaumethode"] <- "oekologisch"
 
 
@@ -117,26 +117,56 @@ table(dfActual[which(dfActual$Bundesland==14),c("Jahr","Anbaumethode")])
 table(dfActual[which(dfActual$districtName=="Leipzig"),c("Jahr","Anbaumethode")])
 
 ## bio Sachsen
-dfSaxonyOrganic <-dfActual[which(dfActual$Jahr>=2012&dfActual$Jahr<=2018&dfActual$Bundesland==14&dfActual$Anbaumethode=="oekologisch"),]
-vecCrop <- unique(dfSaxonyOrganic$cropTestbetrieb)
-names(dfSaxonyOrganic)
+dfSaxony <-dfActual[which(dfActual$Jahr>=2012&dfActual$Jahr<=2018&dfActual$Bundesland==14&dfActual$Anbaumethode%in%c("konventionell","oekologisch")),]
+vecCrop <- unique(dfSaxony$cropTestbetrieb)
+names(dfSaxony)
 
 lsYield <- lapply(vecCrop,function(c){
-  dfCrop <- dfSaxonyOrganic[which(dfSaxonyOrganic$cropTestbetrieb==c),]
-  data.frame(crop=c,n=nrow(dfCrop),Mittelwert=mean(dfCrop$Ertrag),Maximum=max(dfCrop$Ertrag))
+  dfCropK <- dfSaxony[which(dfSaxony$cropTestbetrieb==c&dfSaxony$Anbaumethode=="konventionell"),]
+  dfCropO <- dfSaxony[which(dfSaxony$cropTestbetrieb==c&dfSaxony$Anbaumethode=="oekologisch"),]
+  
+  data.frame(crop=c,nK=nrow(dfCropK),nBetriebeK=length(unique(dfCropK$key)),MittelwertK=mean(dfCropK$Ertrag),MaximumK=max(dfCropK$Ertrag),
+                    nO=nrow(dfCropO),nBetriebeO=length(unique(dfCropO$key)),MittelwertO=mean(dfCropO$Ertrag),MaximumO=max(dfCropO$Ertrag))
 })
 dfYieldSaxony <- do.call(rbind,lsYield)
 head(dfYieldSaxony)
 
-## only keep crops with at least 5 farms
-dfYieldSaxony <- dfYieldSaxony[which(dfYieldSaxony$n>=5),]
-
+dfYieldSaxony <- na.omit(dfYieldSaxony)
+write.csv(dfYieldSaxony,"C:/Users/egli/Nextcloud/Cloud/Maasterarbeiten_Selbstversorgung/Testbetriebsnetz/ErtrageMittel.csv",row.names = F)
+          
 ## assume 75% of yield gap closing
-dfYieldSaxony$ErtragOptimiert <- dfYieldSaxony$Maximum*0.75
-sum(dfYieldSaxony$ErtragOptimiert>dfYieldSaxony$Mittelwert)==nrow(dfYieldSaxony)
-dfYieldSaxony$Ertragssteigerung <- (dfYieldSaxony$ErtragOptimiert/dfYieldSaxony$Mittelwert)
-hist(dfYieldSaxony$Ertragssteigerung)
+dfYieldSaxonyOrgainic <- dfYieldSaxony[,c(1,6,8,9)]
+dfYieldSaxonyOrgainic <- dfYieldSaxonyOrgainic[which(dfYieldSaxonyOrgainic$nO>=5),] ## only keep crops with at least 5 farms
+dfYieldSaxonyOrgainic$ErtragOptimiert <- dfYieldSaxonyOrgainic$MaximumO*0.75
+sum(dfYieldSaxonyOrgainic$ErtragOptimiert>dfYieldSaxonyOrgainic$MittelwertO)==nrow(dfYieldSaxonyOrgainic)
+dfYieldSaxonyOrgainic$Ertragssteigerung <- (dfYieldSaxonyOrgainic$ErtragOptimiert/dfYieldSaxonyOrgainic$MittelwertO)
+hist(dfYieldSaxonyOrgainic$Ertragssteigerung)
+write.csv(dfYieldSaxonyOrgainic,"C:/Users/egli/Nextcloud/Cloud/Maasterarbeiten_Selbstversorgung/Testbetriebsnetz/ErtrageBioOptimiert.csv",row.names = F)
 
+## variability per farmer
+lsVariability <- lapply(vecCrop,function(c){
+  dfCrop <- dfSaxony[which(dfSaxony$cropTestbetrieb==c),]
+  vecKey <- unique(dfCrop$key)
+  lsKey <- lapply(vecKey,function(k){
+    dfKey <- dfCrop[which(dfCrop$key==k),]
+    meth <- unique(dfKey$Anbaumethode)
+    if (length(meth)==1)
+    {
+    data.frame(crop=c,key=k,n=nrow(dfKey),Mittelwert=mean(dfKey$Ertrag),sd=sd(dfKey$Ertrag),cv=sd(dfKey$Ertrag)/mean(dfKey$Ertrag),Anbaumethode=meth)
+    }
+  })
+  dfKey <- do.call(rbind,lsKey)
+  dfKey <- na.omit(dfKey)
+  dfKey <- dfKey[which(dfKey$n>=3),]
+  dfKeyK <- dfKey[which(dfKey$Anbaumethode=="konventionell"),]
+  dfKeyO <- dfKey[which(dfKey$Anbaumethode=="oekologisch"),]
+  
+  data.frame(crop=c,nK=nrow(dfKeyK),MittelwertK=mean(dfKeyK$Mittelwert),sdK=mean(dfKeyK$sd),cvK=mean(dfKeyK$cv),
+                    nO=nrow(dfKeyO),MittelwertO=mean(dfKeyO$Mittelwert),sdO=mean(dfKeyO$sd),cvO=mean(dfKeyO$cv))
+})
+dfVariabilitySaxony <- do.call(rbind,lsVariability)
+dfVariabilitySaxony <- na.omit(dfVariabilitySaxony)
+head(dfYieldSaxony)
 
 #### calculate stability 
 head(dfActual)
