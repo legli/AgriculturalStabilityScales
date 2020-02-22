@@ -1,21 +1,24 @@
 
 funCombinePlot <- function(mod1,mod2,namPred,tit,color,yLength,yname){
   
-  if (!is.null(mod2))
-  {
-    dfCombined <- data.frame(rbind(
-      summary(mod1)$coefficients[2:7,c(1,2,4)],
-      summary(mod2)$coefficients[2,c(1,2,4)]
-    ))
-    vecName <- c("Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time","Area harvested") 
-  }
 
-  if (is.null(mod2))
+  if (mod2=="all")
   {
     dfCombined <- data.frame(
       summary(mod1)$coefficients[2:7,c(1,2,4)]
       )
+    # names(dfCombined) <- c("Effect","SE","pVal")
     vecName <- c("Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time") 
+  }
+
+  if (mod2 == "farm")
+  {
+    dfCombined <- data.frame(
+      summary(mod1)$coefficients[2:5,c(1,2,4)]
+    )
+    # names(dfCombined) <- c("Effect","SE","pVal")
+    # dfCombined <- rbind(dfCombined,data.frame(Effect=c(0,0),SE=c(0,0),pVal=c(9999,9999)))
+    vecName <- c("Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability") 
   }
   
   names(dfCombined) <- c("Effect","SE","pVal")
@@ -53,10 +56,7 @@ funCombinePlot <- function(mod1,mod2,namPred,tit,color,yLength,yname){
   {fig <- fig + theme(axis.text.x = element_text(angle = 45, hjust = 1,size=6))}
   if (!namPred)
   {fig <- fig + theme(axis.text.x=element_blank())}
-  if (!is.null(mod2))
-  {
-    fig <- fig + geom_vline(xintercept=6.5,size=0)
-  }
+
   fig
 }
 

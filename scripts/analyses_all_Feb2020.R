@@ -9,8 +9,13 @@ library(fitdistrplus)
 library(countrycode)
 library(grid)
 library(gridExtra)
+library(car)
 
-## globals
+
+
+############################################################################################
+###################           GLOBALS               ########################################
+############################################################################################
 
 lev <- c("Country","Region","Farm")
 myColors <- c("#4daf4a","#045A8D", "#ff7f00")
@@ -24,7 +29,11 @@ vecColMap[5] <- "gray75"
 
 source("scripts/functionsAnalysesFinal.R")
 
-##################### Read data
+
+
+############################################################################################
+###################              DATA               ########################################
+############################################################################################
 
 ###### Country level
 dfCountry <- read.csv("datasetsDerived/dataFinal_global.csv")
@@ -49,6 +58,12 @@ hist(dfFarm$stabilityOverall)
 # remove stability outliers (very skewed)
 dfFarm <- dfFarm[-which(dfFarm$stability%in%boxplot.stats(dfFarm$stability)$out),]
 
+
+
+
+############################################################################################
+###################          ANALYSES               ########################################
+############################################################################################
 
 ##################### Regression 
 ###### Country level
@@ -81,16 +96,22 @@ dfPredictorsCountry=sapply(dfLogCountry[,-c(1:3)],function(x)scale(x,center = T,
 dfCenterCountry=data.frame(Country=dfLogCountry[,1],slopeStability=dfLogCountry[,2],slopeYield=dfLogCountry[,3],dfPredictorsCountry)
 head(dfCenterCountry)
 
+## check colinearity
+cor(dfCenterCountry[,2:9],method='s') 
+
 ## regression models
 modStabilityCountry <- lm(slopeStability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterCountry)
 summary(modStabilityCountry)
 modStabilityCountryRaw <- lm(slopeStability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfLogCountry)
 summary(modStabilityCountryRaw)
+vif(modStabilityCountry)
 
 modYieldCountry <- lm(slopeYield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterCountry)
 summary(modYieldCountry)
 modYieldCountryRaw <- lm(slopeYield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfLogCountry)
 summary(modYieldCountryRaw)
+vif(modYieldCountry)
+
 
 ###### European level
 ### preparation
@@ -122,16 +143,21 @@ dfPredictorsRegion=sapply(dfLogRegion[,-c(1:3)],function(x)scale(x,center = T,sc
 dfCenterRegion=data.frame(Region=dfLogRegion[,1],slopeStability=dfLogRegion[,2],slopeYield=dfLogRegion[,3],dfPredictorsRegion)
 head(dfCenterRegion)
 
+## check colinearity
+cor(dfCenterRegion[,2:9],method='s') 
+
 ## regression models
 modStabilityRegion <- lm(slopeStability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterRegion)
 summary(modStabilityRegion)
 modStabilityRegionRaw <- lm(slopeStability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfLogRegion)
 summary(modStabilityRegionRaw)
+vif(modStabilityRegion)
 
 modYieldRegion <- lm(slopeYield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterRegion)
 summary(modYieldRegion)
 modYieldRegionRaw <- lm(slopeYield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfLogRegion)
 summary(modYieldRegionRaw)
+vif(modYieldRegion)
 
 ###### Farm level
 ### preparation
@@ -165,18 +191,27 @@ dfPredictorsFarm=sapply(dfLogFarm[,-c(1:3)],function(x)scale(x,center = T,scale=
 dfCenterFarm=data.frame(Farm=dfLogFarm[,1],slopeStability=dfLogFarm[,2],slopeYield=dfLogFarm[,3],dfPredictorsFarm)
 head(dfCenterFarm)
 
+## check colinearity
+cor(dfCenterFarm[,2:9],method='s') # remove instabilityPrec and time Period
+
 ## regression models
-modStabilityFarm <- lm(slopeStability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterFarm)
+modStabilityFarm <- lm(slopeStability~diversity+fertilizer+irrigation+instabilityTemp,data=dfCenterFarm)
 summary(modStabilityFarm)
-modStabilityFarmRaw <- lm(slopeStability~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfLogFarm)
+modStabilityFarmRaw <- lm(slopeStability~diversity+fertilizer+irrigation+instabilityTemp,data=dfLogFarm)
 summary(modStabilityFarmRaw)
+vif(modStabilityFarm)
 
-modYieldFarm <- lm(slopeYield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfCenterFarm)
+modYieldFarm <- lm(slopeYield~diversity+fertilizer+irrigation+instabilityTemp,data=dfCenterFarm)
 summary(modYieldFarm)
-modYieldFarmRaw <- lm(slopeYield~diversity+fertilizer+irrigation+instabilityTemp+instabilityPrec+timePeriod,data=dfLogFarm)
+modYieldFarmRaw <- lm(slopeYield~diversity+fertilizer+irrigation+instabilityTemp,data=dfLogFarm)
 summary(modYieldFarmRaw)
+vif(modYieldFarm)
 
-###### FIGURES
+
+
+############################################################################################
+###################           FIGURES               ########################################
+############################################################################################
 
 ##### Fig 1: maps of small and large scale stabilities/yields
 
@@ -234,12 +269,12 @@ dev.off()
 
 ##### Fig 2
 # barplot of  stability model
-a2 <- funCombinePlot(modStabilityCountry,NULL,T,"Country",myColors[1],0.4,"Yield stability ratio")
-b2 <- funCombinePlot(modStabilityRegion,NULL,T,"Region",myColors[2],0.4,"")
-c2 <- funCombinePlot(modStabilityFarm,NULL,T,"Farm",myColors[3],0.4,"")
-as2 <- funCombinePlot(modYieldCountry,NULL,T,"Country",myColors[1],0.6,"Yield ratio")
-bs2 <- funCombinePlot(modYieldRegion,NULL,T,"Region",myColors[2],0.6,"")
-cs2 <- funCombinePlot(modYieldFarm,NULL,T,"Farm",myColors[3],0.6,"")
+a2 <- funCombinePlot(modStabilityCountry,"all",T,"Country",myColors[1],0.4,"Yield stability ratio")
+b2 <- funCombinePlot(modStabilityRegion,"all",T,"Region",myColors[2],0.4,"")
+c2 <- funCombinePlot(modStabilityFarm,"farm",T,"Farm",myColors[3],0.4,"")
+as2 <- funCombinePlot(modYieldCountry,"all",T,"Country",myColors[1],0.6,"Yield ratio")
+bs2 <- funCombinePlot(modYieldRegion,"all",T,"Region",myColors[2],0.6,"")
+cs2 <- funCombinePlot(modYieldFarm,"farm",T,"Farm",myColors[3],0.6,"")
 
 # plot
 jpeg("results/Fig2.jpeg", width = 16.9, height = 16.9*0.3, units = 'cm', res = 600)
@@ -366,14 +401,14 @@ as6 <- funPredRange(predictor="diversity",dfPredict=dfPredictFarm,dfCenter=dfCen
 bs6 <- funPredRange(predictor="fertilizer",dfPredict=dfPredictFarm,dfCenter=dfCenterFarm,dfLog=dfLogFarm,dfOriginal=dfFarm,modS=modStabilityFarm,modY=modYieldFarm,trans="sqrt",xlabel="N use intensity (t/ha)",ylabel="",posX=-9999,posY=-9999,tStability="***",tYield="***")
 cs6 <- funPredRange(predictor="irrigation",dfPredict=dfPredictFarm,dfCenter=dfCenterFarm,dfLog=dfLogFarm,dfOriginal=dfFarm,modS=modStabilityFarm,modY=modYieldFarm,trans="sqrt",xlabel="Irrigation (%)",ylabel="",posX=-9999,posY=-9999,tStability="",tYield="***")
 ds6 <- funPredRange(predictor="instabilityTemp",dfPredict=dfPredictFarm,dfCenter=dfCenterFarm,dfLog=dfLogFarm,dfOriginal=dfFarm,modS=modStabilityFarm,modY=modYieldFarm,trans="",xlabel=expression(paste("Temperature instability (-(",mu,"/",sigma,"))")),ylabel="Ratio",posX=-9999,posY=-9999,tStability="***",tYield="***")
-es6 <- funPredRange(predictor="instabilityPrec",dfPredict=dfPredictFarm,dfCenter=dfCenterFarm,dfLog=dfLogFarm,dfOriginal=dfFarm,modS=modStabilityFarm,modY=modYieldFarm,trans="",xlabel=expression(paste("Precipitation instability (-(",mu,"/",sigma,"))")),ylabel="",posX=-9999,posY=-9999,tStability="***",tYield="***")
-fs6 <- funPredRange(predictor="timePeriod",dfPredict=dfPredictFarm,dfCenter=dfCenterFarm,dfLog=dfLogFarm,dfOriginal=dfFarm,modS=modStabilityFarm,modY=modYieldFarm,trans="",xlabel="Time",ylabel="",posX=-9999,posY=-9999,tStability="",tYield="***")
+# es6 <- funPredRange(predictor="instabilityPrec",dfPredict=dfPredictFarm,dfCenter=dfCenterFarm,dfLog=dfLogFarm,dfOriginal=dfFarm,modS=modStabilityFarm,modY=modYieldFarm,trans="",xlabel=expression(paste("Precipitation instability (-(",mu,"/",sigma,"))")),ylabel="",posX=-9999,posY=-9999,tStability="***",tYield="***")
+# fs6 <- funPredRange(predictor="timePeriod",dfPredict=dfPredictFarm,dfCenter=dfCenterFarm,dfLog=dfLogFarm,dfOriginal=dfFarm,modS=modStabilityFarm,modY=modYieldFarm,trans="",xlabel="Time",ylabel="",posX=-9999,posY=-9999,tStability="",tYield="***")
 
-jpeg("results/FigS6.jpeg", width = 16.9, height = 16.9*(2/3), units = 'cm', res = 600)
+jpeg("results/FigS6.jpeg", width = 16.9*(2/3), height = 16.9*(2/3), units = 'cm', res = 600)
 
-ggarrange(as6, bs6, cs6, ds6, es6,fs6,
+ggarrange(as6, bs6, cs6, ds6, 
           labels = c(letters[1:6]),font.label=list(size=6),
-          ncol = 3, nrow = 2,heights = c(1,1))
+          ncol = 2, nrow = 2,heights = c(1,1))
 
 dev.off()
 
