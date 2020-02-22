@@ -144,6 +144,9 @@ funTables <- function(modN,modS,modF,r,nam)
   dfFarmTab[indLow,4] <- "<0.0001"
   dfFarmTab <- dfFarmTab[,c(1,3,4)]
   colnames(dfFarmTab) <- c("Estimate (SE)","T","p-value") 
+  dfFarmTabEmpty <- data.frame(e=c(NA,NA),T=c(NA,NA),p=c(NA,NA))
+  colnames(dfFarmTabEmpty)<- c("Estimate (SE)","T","p-value") 
+  dfFarmTab <- rbind(dfFarmTab,dfFarmTabEmpty)
   dfFarmTab2 <- data.frame(est=c(summary(modF)$r.squared,AIC(modF)),tVal=c(NA,NA),pVal=c(NA,NA))
   dfFarmTab2$est <- round(dfFarmTab2$est,r)
   rownames(dfFarmTab2) <- c("R2","AIC")
