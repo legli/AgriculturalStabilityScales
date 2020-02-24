@@ -70,8 +70,9 @@ dfFarm <- dfFarm[-which(dfFarm$stability%in%boxplot.stats(dfFarm$stability)$out)
 ### preparation
 # get extremes
 dfCountry$slopeStability <- dfCountry$stabilityOverall/dfCountry$stability
-sum(dfCountry$slopeStability<1)/nrow(dfCountry)
+sum(dfCountry$slopeStability>1)/nrow(dfCountry)*100
 dfCountry$slopeYield <- dfCountry$yieldOverall/dfCountry$yield
+sum(dfCountry$slopeYield>1)/nrow(dfCountry)*100
 
 # check distribution of response variables
 fitdist(dfCountry$slopeStability,"gamma")$aic - fitdist(dfCountry$slopeStability,"lnorm")$aic #log-normally distributed
@@ -117,8 +118,9 @@ vif(modYieldCountry)
 ### preparation
 # get extremes
 dfRegion$slopeStability <- dfRegion$stabilityOverall/dfRegion$stability
-sum(dfRegion$slopeStability<1)/nrow(dfRegion)
+sum(dfRegion$slopeStability>1)/nrow(dfRegion)*100
 dfRegion$slopeYield <- dfRegion$yieldOverall/dfRegion$yield
+sum(dfRegion$slopeYield>1)/nrow(dfRegion)*100
 
 # check distribution of response variables
 fitdist(dfRegion$slopeStability,"gamma")$aic - fitdist(dfRegion$slopeStability,"lnorm")$aic #log-normally distributed
@@ -164,8 +166,9 @@ vif(modYieldRegion)
 
 # get extremes
 dfFarm$slopeStability <- dfFarm$stabilityOverall/dfFarm$stability
-sum(dfFarm$slopeStability<1)/nrow(dfFarm)
+sum(dfFarm$slopeStability>1)/nrow(dfFarm)*100
 dfFarm$slopeYield <- dfFarm$yieldOverall/dfFarm$yield
+sum(dfFarm$slopeYield>1)/nrow(dfFarm)*100
 
 # check distribution of response variables
 fitdist(dfFarm$slopeStability,"gamma")$aic-fitdist(dfFarm$slopeStability,"lnorm")$aic #log-normally distributed
@@ -223,9 +226,10 @@ g.legend <- ggplot(grd, aes(dim1,dim2,fill=factor(1:9)))+
   theme(legend.position="none",axis.title=element_text(size=5),
         panel.background=element_blank(),plot.margin=margin(t=10,b=10,l=10))+
   theme(axis.title=element_text(color="black",size=8),
-        axis.title.y = element_text(angle = 90))+
-  labs(x="Stability level",y="Stability overall") 
+        axis.title.y = element_text(angle = 90))
 
+g.legend1 <- g.legend + labs(x="Small scale stability",y="Large scale stability") 
+g.legend2 <- g.legend + labs(x="Small scale yields",y="Large scale yields") 
 vp<-viewport(width=0.2,height=0.2,x=0.12,y=0.6)
 
 # national level
@@ -256,7 +260,7 @@ jpeg("results/Fig1.jpeg", width = 16.9,height = 16.9, units = 'cm',res = 300)
 grid.arrange(a1,b1,c1,
           layout_matrix = rbind(c(1, 1),
                                 c(2, 3)))
-print(g.legend,vp=vp)
+print(g.legend1,vp=vp)
 dev.off()
 
 jpeg("results/FigS1.jpeg", width = 16.9,height = 16.9, units = 'cm',res = 300)
@@ -264,16 +268,16 @@ jpeg("results/FigS1.jpeg", width = 16.9,height = 16.9, units = 'cm',res = 300)
 grid.arrange(as1,bs1,cs1,
              layout_matrix = rbind(c(1, 1),
                                    c(2, 3)))
-print(g.legend,vp=vp)
+print(g.legend2,vp=vp)
 dev.off()
 
 ##### Fig 2
 # barplot of  stability model
-a2 <- funCombinePlot(modStabilityCountry,"all",T,"Country",myColors[1],0.4,"Yield stability ratio")
-b2 <- funCombinePlot(modStabilityRegion,"all",T,"Region",myColors[2],0.4,"")
+a2 <- funCombinePlot(modStabilityCountry,"all",T,"National",myColors[1],0.4,"Standardized regression coefficient")
+b2 <- funCombinePlot(modStabilityRegion,"all",T,"Regional",myColors[2],0.4,"")
 c2 <- funCombinePlot(modStabilityFarm,"farm",T,"Farm",myColors[3],0.4,"")
-as2 <- funCombinePlot(modYieldCountry,"all",T,"Country",myColors[1],0.6,"Yield ratio")
-bs2 <- funCombinePlot(modYieldRegion,"all",T,"Region",myColors[2],0.6,"")
+as2 <- funCombinePlot(modYieldCountry,"all",T,"National",myColors[1],0.6,"Standardized regression coefficient")
+bs2 <- funCombinePlot(modYieldRegion,"all",T,"Regional",myColors[2],0.6,"")
 cs2 <- funCombinePlot(modYieldFarm,"farm",T,"Farm",myColors[3],0.6,"")
 
 # plot
@@ -282,6 +286,7 @@ jpeg("results/Fig2.jpeg", width = 16.9, height = 16.9*0.3, units = 'cm', res = 6
             labels = letters[1:3],font.label=list(size=8),
             ncol = 3, nrow = 1)
 dev.off()
+
 jpeg("results/FigS2.jpeg", width = 16.9, height = 16.9*0.3, units = 'cm', res = 600)
   ggarrange(as2,bs2,cs2,
             labels = letters[1:3],font.label=list(size=8),
@@ -305,7 +310,7 @@ head(dfPredictStabilityAll)
 dfPredictStabilityAll$plotLevel <- paste0(dfPredictStabilityAll$plot,dfPredictStabilityAll$level)
 dfPredictStabilityAll$plotLevel <- factor(dfPredictStabilityAll$plotLevel,levels=c("DiversityCountry","FertilizerCountry","IrrigationCountry","AllCountry","DiversityRegion","FertilizerRegion","IrrigationRegion","AllRegion"))
 
-levelLabs <- c("a     Diversity","b     Fertilizer","c     Irrigation","d     All","e","f","g","h  Diversity/Fertilizer")
+levelLabs <- c("a     Diversity","b     Fertilizer","c     Irrigation","d     All","e","f","g","h")
 names(levelLabs) <- c("DiversityCountry","FertilizerCountry","IrrigationCountry","AllCountry","DiversityRegion","FertilizerRegion","IrrigationRegion","AllRegion")
 
 jpeg("results/Fig3.jpeg", width = 16.9, height = 16.9*0.5, units = 'cm', res = 600)
@@ -320,7 +325,7 @@ jpeg("results/Fig3.jpeg", width = 16.9, height = 16.9*0.5, units = 'cm', res = 6
     geom_vline(xintercept=0,size=0)+
     geom_vline(xintercept=1,size=0,linetype="dotted")+
     theme(strip.text = element_text(hjust = 0.1))+
-    labs(y= "Count", x = "Slope stability")+
+    labs(y= "Count", x = "Yield stability ratio")+
     scale_fill_discrete(name = "")+
     ylim(0,80)
 dev.off()
@@ -338,7 +343,7 @@ head(dfPredictYieldAll)
 dfPredictYieldAll$plotLevel <- paste0(dfPredictYieldAll$plot,dfPredictYieldAll$level)
 dfPredictYieldAll$plotLevel <- factor(dfPredictYieldAll$plotLevel,levels=c("DiversityCountry","FertilizerCountry","IrrigationCountry","AllCountry","DiversityRegion","FertilizerRegion","IrrigationRegion","AllRegion"))
 
-levelLabs <- c("a     Diversity","b     Fertilizer","c     Irrigation","d     All","e","f","g","h  Diversity/Fertilizer")
+levelLabs <- c("a     Diversity","b     Fertilizer","c     Irrigation","d     All","e","f","g","h")
 names(levelLabs) <- c("DiversityCountry","FertilizerCountry","IrrigationCountry","AllCountry","DiversityRegion","FertilizerRegion","IrrigationRegion","AllRegion")
 
 jpeg("results/FigS3.jpeg", width = 16.9, height = 16.9*0.5, units = 'cm', res = 600)
@@ -353,7 +358,7 @@ ggplot(dfPredictYieldAll, aes(x=slope, fill=scenario)) +
   geom_vline(xintercept=0,size=0)+
   geom_vline(xintercept=1,size=0,linetype="dotted")+
   theme(strip.text = element_text(hjust = 0.1))+
-  labs(y= "Count", x = "Slope yield")+
+  labs(y= "Count", x = "Yield ratio")+
   scale_fill_discrete(name = "")+
   ylim(0,120)
 dev.off()
@@ -364,7 +369,7 @@ dev.off()
 # country 
 dfPredictCountry <- data.frame(diversity=rep(0,1000),irrigation=0,fertilizer=0,instabilityTemp=0,instabilityPrec=0,timePeriod=0)
 as4 <- funPredRange(predictor="diversity",dfPredict=dfPredictCountry,dfCenter=dfCenterCountry,dfLog=dfLogCountry,dfOriginal=dfCountry,modS=modStabilityCountry,modY=modYieldCountry,trans="",xlabel="Diversity",ylabel="Ratio",posX=0.85,posY=0.8,tStability="***",tYield="")
-bs4 <- funPredRange(predictor="fertilizer",dfPredict=dfPredictCountry,dfCenter=dfCenterCountry,dfLog=dfLogCountry,dfOriginal=dfCountry,modS=modStabilityCountry,modY=modYieldCountry,trans="sqrt",xlabel="N use intensity (t/ha)",ylabel="",posX=-9999,posY=-9999,tStability="***",tYield="***")
+bs4 <- funPredRange(predictor="fertilizer",dfPredict=dfPredictCountry,dfCenter=dfCenterCountry,dfLog=dfLogCountry,dfOriginal=dfCountry,modS=modStabilityCountry,modY=modYieldCountry,trans="sqrt",xlabel="Fertilizer (t/ha)",ylabel="",posX=-9999,posY=-9999,tStability="***",tYield="***")
 cs4 <- funPredRange(predictor="irrigation",dfPredict=dfPredictCountry,dfCenter=dfCenterCountry,dfLog=dfLogCountry,dfOriginal=dfCountry,modS=modStabilityCountry,modY=modYieldCountry,trans="sqrt",xlabel="Irrigation (%)",ylabel="",posX=-9999,posY=-9999,tStability=" *",tYield="")
 ds4 <- funPredRange(predictor="instabilityTemp",dfPredict=dfPredictCountry,dfCenter=dfCenterCountry,dfLog=dfLogCountry,dfOriginal=dfCountry,modS=modStabilityCountry,modY=modYieldCountry,trans="",xlabel=expression(paste("Temperature instability (-(",mu,"/",sigma,"))")),ylabel="Ratio",posX=-9999,posY=-9999,tStability="***",tYield="")
 es4 <- funPredRange(predictor="instabilityPrec",dfPredict=dfPredictCountry,dfCenter=dfCenterCountry,dfLog=dfLogCountry,dfOriginal=dfCountry,modS=modStabilityCountry,modY=modYieldCountry,trans="",xlabel=expression(paste("Precipitation instability (-(",mu,"/",sigma,"))")),ylabel="",posX=-9999,posY=-9999,tStability="***",tYield="***")
@@ -381,7 +386,7 @@ dev.off()
 # region 
 dfPredictRegion <- data.frame(diversity=rep(0,1000),irrigation=0,fertilizer=0,instabilityTemp=0,instabilityPrec=0,timePeriod=0)
 as5 <- funPredRange(predictor="diversity",dfPredict=dfPredictRegion,dfCenter=dfCenterRegion,dfLog=dfLogRegion,dfOriginal=dfRegion,modS=modStabilityRegion,modY=modYieldRegion,trans="",xlabel="Diversity",ylabel="Ratio",posX=0.85,posY=0.8,tStability="***",tYield="***")
-bs5 <- funPredRange(predictor="fertilizer",dfPredict=dfPredictRegion,dfCenter=dfCenterRegion,dfLog=dfLogRegion,dfOriginal=dfRegion,modS=modStabilityRegion,modY=modYieldRegion,trans="sqrt",xlabel="N use intensity (t/ha)",ylabel="",posX=-9999,posY=-9999,tStability="***",tYield="***")
+bs5 <- funPredRange(predictor="fertilizer",dfPredict=dfPredictRegion,dfCenter=dfCenterRegion,dfLog=dfLogRegion,dfOriginal=dfRegion,modS=modStabilityRegion,modY=modYieldRegion,trans="sqrt",xlabel="Fertilizer (t/ha)",ylabel="",posX=-9999,posY=-9999,tStability="***",tYield="***")
 cs5 <- funPredRange(predictor="irrigation",dfPredict=dfPredictRegion,dfCenter=dfCenterRegion,dfLog=dfLogRegion,dfOriginal=dfRegion,modS=modStabilityRegion,modY=modYieldRegion,trans="sqrt",xlabel="Irrigation (%)",ylabel="",posX=-9999,posY=-9999,tStability="***",tYield="")
 ds5 <- funPredRange(predictor="instabilityTemp",dfPredict=dfPredictRegion,dfCenter=dfCenterRegion,dfLog=dfLogRegion,dfOriginal=dfRegion,modS=modStabilityRegion,modY=modYieldRegion,trans="",xlabel=expression(paste("Temperature instability (-(",mu,"/",sigma,"))")),ylabel="Ratio",posX=-9999,posY=-9999,tStability=" *",tYield="***")
 es5 <- funPredRange(predictor="instabilityPrec",dfPredict=dfPredictRegion,dfCenter=dfCenterRegion,dfLog=dfLogRegion,dfOriginal=dfRegion,modS=modStabilityRegion,modY=modYieldRegion,trans="",xlabel=expression(paste("Precipitation instability (-(",mu,"/",sigma,"))")),ylabel="",posX=-9999,posY=-9999,tStability=" *",tYield="**")
@@ -398,7 +403,7 @@ dev.off()
 # farm 
 dfPredictFarm <- data.frame(diversity=rep(0,1000),irrigation=0,fertilizer=0,instabilityTemp=0,instabilityPrec=0,timePeriod=0)
 as6 <- funPredRange(predictor="diversity",dfPredict=dfPredictFarm,dfCenter=dfCenterFarm,dfLog=dfLogFarm,dfOriginal=dfFarm,modS=modStabilityFarm,modY=modYieldFarm,trans="",xlabel="Diversity",ylabel="Ratio",posX=0.85,posY=0.8,tStability="***",tYield="")
-bs6 <- funPredRange(predictor="fertilizer",dfPredict=dfPredictFarm,dfCenter=dfCenterFarm,dfLog=dfLogFarm,dfOriginal=dfFarm,modS=modStabilityFarm,modY=modYieldFarm,trans="sqrt",xlabel="N use intensity (t/ha)",ylabel="",posX=-9999,posY=-9999,tStability="***",tYield="***")
+bs6 <- funPredRange(predictor="fertilizer",dfPredict=dfPredictFarm,dfCenter=dfCenterFarm,dfLog=dfLogFarm,dfOriginal=dfFarm,modS=modStabilityFarm,modY=modYieldFarm,trans="sqrt",xlabel=paste0("Fertilizer (","\u20AC","/ha)"),ylabel="",posX=-9999,posY=-9999,tStability="***",tYield="***")
 cs6 <- funPredRange(predictor="irrigation",dfPredict=dfPredictFarm,dfCenter=dfCenterFarm,dfLog=dfLogFarm,dfOriginal=dfFarm,modS=modStabilityFarm,modY=modYieldFarm,trans="sqrt",xlabel="Irrigation (%)",ylabel="",posX=-9999,posY=-9999,tStability="",tYield="***")
 ds6 <- funPredRange(predictor="instabilityTemp",dfPredict=dfPredictFarm,dfCenter=dfCenterFarm,dfLog=dfLogFarm,dfOriginal=dfFarm,modS=modStabilityFarm,modY=modYieldFarm,trans="",xlabel=expression(paste("Temperature instability (-(",mu,"/",sigma,"))")),ylabel="Ratio",posX=-9999,posY=-9999,tStability="***",tYield="***")
 # es6 <- funPredRange(predictor="instabilityPrec",dfPredict=dfPredictFarm,dfCenter=dfCenterFarm,dfLog=dfLogFarm,dfOriginal=dfFarm,modS=modStabilityFarm,modY=modYieldFarm,trans="",xlabel=expression(paste("Precipitation instability (-(",mu,"/",sigma,"))")),ylabel="",posX=-9999,posY=-9999,tStability="***",tYield="***")

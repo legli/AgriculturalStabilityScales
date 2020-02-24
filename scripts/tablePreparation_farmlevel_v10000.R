@@ -252,6 +252,12 @@ lsAll <- lapply(vecLevelFinal,function(lev){
         dfProductionOverallAgg <- aggregate(cbind(Production,AreaHarvested)~Year,dfProductionOverall,sum)
         dfProductionOverallAgg$Yield <- dfProductionOverallAgg$Production/dfProductionOverallAgg$AreaHarvested
         dfProductionOverallAgg$YieldDet <-resid(lm(Yield ~ Year^2,data=dfProductionOverallAgg)) 
+
+        # global production withouth the target country
+        dfProductionReduced <- dfProductionOverall[-which(dfProductionOverall$Level==lev),]
+        dfProductionReducedAgg <- aggregate(cbind(Production,AreaHarvested)~Year,dfProductionReduced,sum)
+        dfProductionReducedAgg$Yield <- dfProductionReducedAgg$Production/dfProductionReducedAgg$AreaHarvested
+        dfProductionReducedAgg$YieldDet <-resid(lm(Yield ~ Year^2,data=dfProductionReducedAgg)) 
         
         # subset data for the target country
         dfProductionSumLevel <- dfYield[which(dfYield$Level==lev&dfYield$Year>=yearStart&dfYield$Year<=(yearStart+9)),]
@@ -263,10 +269,13 @@ lsAll <- lapply(vecLevelFinal,function(lev){
         dfSummary <- data.frame(Level=lev, timePeriod= yearStart, REGION_ID=unique(dfManagementLevel$REGION_ID))
         dfSummary$stability <- mean(dfProductionSumLevel$Yield,na.rm=T)/sd(dfProductionSumLevel$YieldDet,na.rm=T)
         dfSummary$stabilityOverall <- mean(dfProductionOverallAgg$Yield,na.rm=T)/sd(dfProductionOverallAgg$YieldDet,na.rm=T)
+        dfSummary$stabilityReduced <- mean(dfProductionReducedAgg$Yield,na.rm=T)/sd(dfProductionReducedAgg$YieldDet,na.rm=T)
         dfSummary$yield <- mean(dfProductionSumLevel$Yield,na.rm=T)
         dfSummary$yieldOverall <- mean(dfProductionOverallAgg$Yield,na.rm=T)
+        dfSummary$yieldReduced <- mean(dfProductionReducedAgg$Yield,na.rm=T)
         dfSummary$areaHarvested <- mean(dfProductionSumLevel$AreaHarvested,na.rm=T)
         dfSummary$areaHarvestedOverall <-  mean(dfProductionOverallAgg$AreaHarvested) 
+        dfSummary$areaHarvestedReduced <-  mean(dfProductionReducedAgg$AreaHarvested)  
         dfSummary$diversity <- mean(dfShannonLevel$diversity,na.rm=T)
         dfSummary$meanCropland <- mean(dfManagementLevel$croplandArea,na.rm=T)
         dfSummary$meanFertilizer <- mean(dfManagementLevel$fertilizer,na.rm=T)
@@ -308,7 +317,7 @@ length(unique(dfAll$Level)) ## 5183 farmers
 ## save the dataframe 
 names(dfAll)[2] <- "Farm"
 dfAll <- dfAll[,c("Farm","REGION_ID","timePeriod",
-                        "stability","stabilityOverall","yield","yieldOverall","areaHarvested","areaHarvestedOverall",
+                        "stability","stabilityOverall","stabilityReduced","yield","yieldOverall","yieldReduced","areaHarvested","areaHarvestedOverall","areaHarvestedReduced",
                         "diversity","fertilizer","irrigation",
                         "instabilityTemp","instabilityPrec"
                         )]

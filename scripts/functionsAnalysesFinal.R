@@ -45,8 +45,8 @@ funCombinePlot <- function(mod1,mod2,namPred,tit,color,yLength,yname){
     xlab("") +
     scale_y_continuous(breaks = round(seq(-yLength,yLength, by = 0.2),1),limits=c(-yLength,yLength)) +
     ylab(yname) +
-    theme(axis.title.y=element_text(size=8)) +
-    theme(axis.text.y = element_text(size=8))+
+    theme(axis.title.y=element_text(size=6)) +
+    theme(axis.text.y = element_text(size=6))+
     geom_hline(yintercept=0,size=0)+
     theme(plot.margin = unit(c(0.2,0.3,-0.5,0.2), "cm"))+
     theme(legend.position = "none")+
