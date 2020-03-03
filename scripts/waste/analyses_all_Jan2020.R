@@ -35,6 +35,12 @@ dfCountryScale <- unique(dfCountryScale)
 names(dfCountryScale)[1] <- "Country"
 dfCountryScale <- dfCountryScale[-which(dfCountryScale$stability%in%boxplot.stats(dfCountryScale$stability)$out),]
 
+
+dfCountryScale$class<-cut(dfCountryScale$areaHarvested, seq(from=min(dfCountryScale$areaHarvested),to=max(dfCountryScale$areaHarvested),length.out=10), right=FALSE, labels=c(1:9))
+table(dfCountryScale$class)
+dfCountryScale$class <- as.numeric(cut2(dfCountryScale$areaHarvested, g=10))
+boxplot(stability~class,dfCountryScale)
+
 ###### Regional level
 dfRegion <- read.csv("datasetsDerived/dataFinal_europe.csv")
 dfRegion <- merge(dfRegion,dfCountry[,c("Country","timePeriod","fertilizer","irrigation")],by=c("Country","timePeriod"))

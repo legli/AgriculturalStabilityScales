@@ -42,6 +42,14 @@ hist(dfCountry$stabilityOverall)
 # remove stability outliers (very skewed)
 dfCountry <- dfCountry[-which(dfCountry$stability%in%boxplot.stats(dfCountry$stability)$out),]
 
+dfCountryScale <- read.csv("datasetsDerived/dataScales_global.csv")
+dfCountryScale <- dfCountryScale[,c("Level","timePeriod","stability","yield","areaHarvested")]
+dfCountryScale <- unique(dfCountryScale)
+names(dfCountryScale)[1] <- "Country"
+hist(dfCountryScale$stability)
+# remove stability outliers (very skewed)
+dfCountryScale <- dfCountryScale[-which(dfCountryScale$stability%in%boxplot.stats(dfCountryScale$stability)$out),]
+
 
 ###### Regional level
 dfRegion <- read.csv("datasetsDerived/dataFinal_europe.csv")
@@ -51,6 +59,15 @@ hist(dfRegion$stabilityOverall)
 # remove stability outliers (to be consistent with other levels)
 dfRegion <- dfRegion[-which(dfRegion$stability%in%boxplot.stats(dfRegion$stability)$out),] 
 
+dfRegionScale <- read.csv("datasetsDerived/dataScales_europe.csv")
+dfRegionScale <- dfRegionScale[,c("Level","timePeriod","stability","yield","areaHarvested")]
+dfRegionScale <- unique(dfRegionScale)
+names(dfRegionScale)[1] <- "Region"
+hist(dfRegionScale$stability)
+# remove stability outliers (very skewed)
+dfRegionScale <- dfRegionScale[-which(dfRegionScale$stability%in%boxplot.stats(dfRegionScale$stability)$out),]
+
+
 ###### Farm level
 dfFarm <- read.csv("P:/dataFinal_farmlevel.csv")
 hist(dfFarm$stability)
@@ -58,6 +75,13 @@ hist(dfFarm$stabilityOverall)
 # remove stability outliers (very skewed)
 dfFarm <- dfFarm[-which(dfFarm$stability%in%boxplot.stats(dfFarm$stability)$out),]
 
+dfFarmScale <- read.csv("P:/dataScales_farm.csv")
+dfFarmScale <- dfFarmScale[,c("Level","timePeriod","stability","yield","areaHarvested","prop")]
+dfFarmScale <- unique(dfFarmScale)
+names(dfFarmScale)[1] <- "Farm"
+hist(dfFarmScale$stability)
+# remove stability outliers (very skewed)
+dfFarmScale <- dfFarmScale[-which(dfFarmScale$stability%in%boxplot.stats(dfFarmScale$stability)$out),]
 
 
 
@@ -65,7 +89,7 @@ dfFarm <- dfFarm[-which(dfFarm$stability%in%boxplot.stats(dfFarm$stability)$out)
 ###################          ANALYSES               ########################################
 ############################################################################################
 
-##################### Regression 
+##################### Regression local 
 ###### Country level
 ### preparation
 # get extremes
@@ -211,6 +235,79 @@ summary(modYieldFarmRaw)
 vif(modYieldFarm)
 
 
+
+
+##################### Regression scale 
+###### Natinal level
+### preparation
+# add original data
+dfCountryScaleFinal <- rbind(dfCountry[,c("Country","timePeriod","stability","yield","areaHarvested")],dfCountryScale[,c("Country","timePeriod","stability","yield","areaHarvested")])
+
+# change area harvested to mio ha
+dfCountryScaleFinal$areaHarvested <- dfCountryScaleFinal$areaHarvested/1000000
+
+### regression analyses
+## transformations
+dfLogCountryScale=with(dfCountryScaleFinal,data.frame(Country,
+                                                      stability = log(stability),
+                                                      yield = log(yield),
+                                                      areaHarvested=areaHarvested, 
+                                                      timePeriod
+))
+
+## linear model
+modStabilityCountryScale <- lm(stability~areaHarvested+timePeriod,dfLogCountryScale)
+summary(modStabilityCountryScale)
+modYieldCountryScale <- lm(yield~areaHarvested+timePeriod,dfLogCountryScale)
+summary(modYieldCountryScale)
+
+
+###### eEgional level
+### preparation
+# add original data
+dfRegionScaleFinal <- rbind(dfRegion[,c("Region","timePeriod","stability","yield","areaHarvested")],dfRegionScale[,c("Region","timePeriod","stability","yield","areaHarvested")])
+
+# change area harvested to mio ha
+dfRegionScaleFinal$areaHarvested <- dfRegionScaleFinal$areaHarvested/1000000
+
+### regression analyses
+## transformations
+dfLogRegionScale=with(dfRegionScaleFinal,data.frame(Region,
+                                                    stability = log(stability),
+                                                    yield = log(yield),
+                                                    areaHarvested=sqrt(areaHarvested), 
+                                                    timePeriod
+))
+
+## regression models
+modStabilityRegionScale <- lm(stability~areaHarvested+timePeriod,dfLogRegionScale)
+summary(modStabilityRegionScale)
+modYieldRegionScale <- lm(yield~areaHarvested+timePeriod,dfLogRegionScale)
+summary(modYieldRegionScale)
+
+
+###### Farm level
+### preparation
+# add original data
+dfFarmScaleFinal <- rbind(dfFarm[,c("Farm","timePeriod","stability","yield","areaHarvested")],dfFarmScale[,c("Farm","timePeriod","stability","yield","areaHarvested")])
+
+# change area harvested to mio ha
+dfFarmScaleFinal$areaHarvested <- dfFarmScaleFinal$areaHarvested/1000000
+
+### regression analyses
+## transformations
+dfLogFarmScale=with(dfFarmScaleFinal,data.frame(Farm,
+                                                stability = log(stability),
+                                                yield = log(yield),
+                                                areaHarvested, 
+                                                timePeriod
+))
+
+## regression models
+modStabilityFarmScale <- lm(stability~areaHarvested+timePeriod,dfLogFarmScale)
+summary(modStabilityFarmScale)
+modYieldFarmScale <- lm(yield~areaHarvested+timePeriod,dfLogFarmScale)
+summary(modYieldFarmScale)
 
 ############################################################################################
 ###################           FIGURES               ########################################

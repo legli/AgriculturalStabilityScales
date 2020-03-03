@@ -346,5 +346,9 @@ dfAll <- dfAll[,c("Country","timePeriod",
                   "instabilityTemp","instabilityPrec")]
 write.csv(dfAll, "datasetsDerived/dataFinal_global.csv",row.names=F)
 
+# save full production file
+dfProduction <- dfProduction[which(dfProduction$Level%in%unique(dfAll$Country)),]
+save(dfProduction, file="datasetsDerived/dfProduction_global.RData")
+
 
 rm(list=ls())

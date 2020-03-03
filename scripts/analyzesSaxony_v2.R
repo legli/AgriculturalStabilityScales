@@ -112,11 +112,36 @@ dfActual[which(dfActual$Methode==3),"Anbaumethode"] <- "oekologisch"
 
 
 ### check year availability
-## only consider focal time frame (2012-2018)
+
 table(dfActual[which(dfActual$Bundesland==14),c("Jahr","Anbaumethode")])
 table(dfActual[which(dfActual$districtName=="Leipzig"),c("Jahr","Anbaumethode")])
 
-## bio Sachsen
+## saxony
+dfSaxonyAll <-dfActual[which(dfActual$Anbaumethode%in%c("konventionell","oekologisch")),]
+vecYear <- unique(dfSaxonyAll$Jahr)
+names(dfSaxonyAll)
+
+lsYear <- lapply(vecYear,function(y){
+  dfYear <- dfSaxonyAll[which(dfSaxonyAll$Jahr==y),]
+  vecCrop <- unique(dfYear$cropTestbetrieb)
+  lsYield <- lapply(vecCrop,function(c){
+    dfCropK <- dfYear[which(dfYear$cropTestbetrieb==c&dfYear$Anbaumethode=="konventionell"),]
+    dfCropO <- dfYear[which(dfYear$cropTestbetrieb==c&dfYear$Anbaumethode=="oekologisch"),]
+    
+    data.frame(Jahr=y,Kultur=c,nBetriebeK=length(unique(dfCropK$key)),MittelwertK=mean(dfCropK$Ertrag),MaximumK=max(dfCropK$Ertrag),
+               nBetriebeO=length(unique(dfCropO$key)),MittelwertO=mean(dfCropO$Ertrag),MaximumO=max(dfCropO$Ertrag))
+  })
+  dfYieldSaxony <- do.call(rbind,lsYield)
+  dfYieldSaxony
+})
+dfYieldSaxonyAll <- do.call(rbind,lsYear)
+head(dfYieldSaxonyAll)
+
+dfYieldSaxonyAll[which(is.infinite(dfYieldSaxonyAll$MaximumO)),"MaximumO"] <- NA
+write.csv(dfYieldSaxonyAll,"C:/Users/egli/Nextcloud/Cloud/Maasterarbeiten_Selbstversorgung/Testbetriebsnetz/ErtrageJahr.csv",row.names = F)
+
+
+## bio Sachsen  only consider focal time frame (2012-2018)
 dfSaxony <-dfActual[which(dfActual$Jahr>=2012&dfActual$Jahr<=2018&dfActual$Bundesland==14&dfActual$Anbaumethode%in%c("konventionell","oekologisch")),]
 vecCrop <- unique(dfSaxony$cropTestbetrieb)
 names(dfSaxony)
@@ -212,3 +237,4 @@ dfShannon <- aggregate(cbind(ProduktionCal)~Jahr+Anbaumethode,dfActualStability[
 
 
 rm(list=ls())
+

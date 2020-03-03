@@ -324,6 +324,10 @@ dfAll <- dfAll[,c("Farm","REGION_ID","timePeriod",
 
 write.csv(dfAll,"P:/dataFinal_farmlevel.csv",row.names=F)
 
+# save full production file
+dfProduction <- dfProduction[which(dfProduction$Level%in%unique(dfAll$Farm)),]
+save(dfProduction, file="P:/dfProduction_farm.RData") 
+
 
 rm(list=ls())
 

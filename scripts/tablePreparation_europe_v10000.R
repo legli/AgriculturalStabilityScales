@@ -260,6 +260,10 @@ dfAll <- dfAll[,c("Region","Country","timePeriod",
 
 write.csv(dfAll, "datasetsDerived/dataFinal_europe.csv",row.names=F)
 
+# save full production file
+dfProduction <- dfProduction[which(dfProduction$Level%in%unique(dfAll$Region)),]
+save(dfProduction, file="datasetsDerived/dfProduction_europe.RData")
+
 
 rm(list=ls())
 
