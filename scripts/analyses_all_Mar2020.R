@@ -39,6 +39,8 @@ source("scripts/functionsAnalyses_Mar2020.R")
 dfCountry <- read.csv("datasetsDerived/dataFinal_global.csv")
 hist(dfCountry$stability) 
 hist(dfCountry$stabilityOverall)
+dfCountry$ratioC <- dfCountry$stability/dfCountry$stabilityOverall
+dfCountry$ratioG <- dfCountry$stabilityOverall/dfCountry$stabilityReduced
 # remove stability outliers (very skewed)
 dfCountry <- dfCountry[-which(dfCountry$stability%in%boxplot.stats(dfCountry$stability)$out),]
 
@@ -94,6 +96,9 @@ dfFarmScale <- dfFarmScale[-which(dfFarmScale$stability%in%boxplot.stats(dfFarmS
 
 # check distribution of response variables
 fitdist(dfCountry$stability,"gamma")$aic - fitdist(dfCountry$stability,"lnorm")$aic #log-normally distributed
+fitdist(dfCountry$ratioC,"gamma")$aic - fitdist(dfCountry$ratioC,"lnorm")$aic #log-normally distributed
+fitdist(dfCountry$ratioG,"gamma")$aic - fitdist(dfCountry$ratioG,"lnorm")$aic #log-normally distributed
+
 fitdist(dfCountry$yield,"gamma")$aic - fitdist(dfCountry$yield,"lnorm")$aic #log-normally distributed
 hist(log(dfCountry$stability))
 hist(log(dfCountry$yield))
@@ -101,7 +106,7 @@ hist(log(dfCountry$yield))
 ### regression analyses
 ## transformations
 dfTransCountry=with(dfCountry,data.frame(Country,
-                                       stability = stability,
+                                       stability = log(stability),
                                        yield = yield,
                                        diversity, 
                                        irrigation=sqrt(irrigation),
@@ -109,6 +114,9 @@ dfTransCountry=with(dfCountry,data.frame(Country,
                                        instabilityTemp,instabilityPrec,
                                        timePeriod
 ))
+
+
+
 
 # scale predictors for standardized regression
 dfPredictorsCountry=sapply(dfTransCountry[,-c(1:3)],function(x)scale(x,center = T,scale=T)[,1])
@@ -143,7 +151,7 @@ hist(log(dfRegion$slopeYield))
 ### regression analyses
 ## transformations
 dfTransRegion=with(dfRegion,data.frame(Region,
-                                     stability = stability,
+                                     stability = stabilityReduced,
                                      yield = yield,
                                      diversity, 
                                      irrigation=sqrt(irrigation),

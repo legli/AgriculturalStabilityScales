@@ -49,6 +49,8 @@ lsAll <- lapply(vecLevelFinal,function(lev){
 })
 dfAll <- do.call(rbind,lsAll)
 head(dfAll)
+# only keep unique entries
+dfAll <- unique(dfAll)
 write.csv(dfAll, "datasetsDerived/dataScales_global.csv",row.names=F)
 
 
@@ -96,6 +98,8 @@ lsAllEurope <- lapply(vecLevelFinal,function(lev){
 })
 dfAllEurope <- do.call(rbind,lsAllEurope)
 head(dfAllEurope)
+# only keep unique entries
+dfAllEurope <- unique(dfAllEurope)
 write.csv(dfAllEurope, "datasetsDerived/dataScales_europe.csv",row.names=F)
 
 
@@ -144,6 +148,9 @@ lsAllFarm <- lapply(sample(vecLevelFinal,1000),function(lev){
 })
 dfAllFarm <- do.call(rbind,lsAllFarm)
 head(dfAllFarm)
+
+# only keep unique entries
+dfAllFarm <- unique(dfAllFarm)
 write.csv(dfAllFarm, "P:/dataScales_farm.csv",row.names=F)
 
 
