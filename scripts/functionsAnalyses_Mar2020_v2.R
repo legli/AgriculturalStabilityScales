@@ -154,17 +154,18 @@ funPlotPred <- function(dfPred,yLength,labX,labY,Legend)
 }  
 
 
-funTables <- function(modN,modS,modF,r,nam)
+funTables <- function(modN,modS,modF,r,namCountry,namRegion,namFarm)
 {
   dfNationalTab <- data.frame(summary(modN)$coefficients)
   indLow <- which(dfNationalTab$Pr...t..<0.0001)
   dfNationalTab <- round(dfNationalTab,r)
-  row.names(dfNationalTab) <- nam
+  row.names(dfNationalTab) <- namCountry
   dfNationalTab$Estimate <- paste0(dfNationalTab$Estimate," (",dfNationalTab$Std..Error,")")
   dfNationalTab[indLow,4] <- "<0.0001"
   dfNationalTab <- dfNationalTab[,c(1,3,4)]
   colnames(dfNationalTab) <- c("Estimate (SE)","T","p-value") 
-  dfNationalTab2 <- data.frame(est=c(summary(modN)$r.squared,AIC(modN)),tVal=c(NA,NA),pVal=c(NA,NA))
+  dfNationalTab$nam <- namCountry
+  dfNationalTab2 <- data.frame(est=c(summary(modN)$r.squared,AIC(modN)),tVal=c(NA,NA),pVal=c(NA,NA),nam=c("R2","AIC"))
   dfNationalTab2$est <- round(dfNationalTab2$est,r)
   rownames(dfNationalTab2) <- c("R2","AIC")
   colnames(dfNationalTab2) <- colnames(dfNationalTab)
@@ -173,12 +174,13 @@ funTables <- function(modN,modS,modF,r,nam)
   dfSubnationalTab <- data.frame(summary(modS)$coefficients)
   indLow <- which(dfSubnationalTab$Pr...t..<0.0001)
   dfSubnationalTab <- round(dfSubnationalTab,r)
-  row.names(dfSubnationalTab) <- NULL
+  row.names(dfSubnationalTab) <- namRegion
   dfSubnationalTab$Estimate <- paste0(dfSubnationalTab$Estimate," (",dfSubnationalTab$Std..Error,")")
   dfSubnationalTab[indLow,4] <- "<0.0001"
   dfSubnationalTab <- dfSubnationalTab[,c(1,3,4)]
   colnames(dfSubnationalTab) <- c("Estimate (SE)","T","p-value") 
-  dfSubnationalTab2 <- data.frame(est=c(summary(modS)$r.squared,AIC(modS)),tVal=c(NA,NA),pVal=c(NA,NA))
+  dfSubnationalTab$nam <- namRegion
+  dfSubnationalTab2 <- data.frame(est=c(summary(modS)$r.squared,AIC(modS)),tVal=c(NA,NA),pVal=c(NA,NA),nam=c("R2","AIC"))
   dfSubnationalTab2$est <- round(dfSubnationalTab2$est,r)
   rownames(dfSubnationalTab2) <- c("R2","AIC")
   colnames(dfSubnationalTab2) <- colnames(dfSubnationalTab)
@@ -187,21 +189,25 @@ funTables <- function(modN,modS,modF,r,nam)
   dfFarmTab <- data.frame(summary(modF)$coefficients)
   indLow <- which(dfFarmTab$Pr...t..<0.0001)
   dfFarmTab <- round(dfFarmTab,r)
-  row.names(dfFarmTab) <- NULL
+  # row.names(dfFarmTab) <- namFarm
   dfFarmTab$Estimate <- paste0(dfFarmTab$Estimate," (",dfFarmTab$Std..Error,")")
   dfFarmTab[indLow,4] <- "<0.0001"
   dfFarmTab <- dfFarmTab[,c(1,3,4)]
   colnames(dfFarmTab) <- c("Estimate (SE)","T","p-value") 
-  dfFarmTabEmpty <- data.frame(e=c(NA,NA),T=c(NA,NA),p=c(NA,NA))
-  colnames(dfFarmTabEmpty)<- c("Estimate (SE)","T","p-value") 
-  dfFarmTab <- rbind(dfFarmTab,dfFarmTabEmpty)
-  dfFarmTab2 <- data.frame(est=c(summary(modF)$r.squared,AIC(modF)),tVal=c(NA,NA),pVal=c(NA,NA))
+  dfFarmTab$nam <- namFarm
+  # dfFarmTabEmpty <- data.frame(e=c(NA,NA),T=c(NA,NA),p=c(NA,NA))
+  # colnames(dfFarmTabEmpty)<- c("Estimate (SE)","T","p-value") 
+  # dfFarmTab <- rbind(dfFarmTab,dfFarmTabEmpty)
+  dfFarmTab2 <- data.frame(est=c(summary(modF)$r.squared,AIC(modF)),tVal=c(NA,NA),pVal=c(NA,NA),nam=c("R2","AIC"))
   dfFarmTab2$est <- round(dfFarmTab2$est,r)
   rownames(dfFarmTab2) <- c("R2","AIC")
   colnames(dfFarmTab2) <- colnames(dfFarmTab)
   dfFarmTab <- rbind(dfFarmTab,dfFarmTab2)  
   
-  cbind(dfNationalTab,dfSubnationalTab,dfFarmTab)
+  dfFinal <- merge(dfNationalTab,dfSubnationalTab,by="nam",all=T)
+  dfFinal <- merge(dfFinal,dfFarmTab,by="nam",all=T)
+  colnames(dfFinal) <- c("Name","Estimate (SE)","T","p-value","Estimate (SE)","T","p-value","Estimate (SE)","T","p-value")
+  dfFinal
   
 }
 
@@ -504,7 +510,10 @@ funPredRange <- function(predictor,dfPredict,dfCenter,dfLog,dfOriginal,modS,tran
   if (trans=="sqrt"){
     pred$variable <- (dfPredictNew[,predictor]*sd(dfLog[,predictor])+mean(dfLog[,predictor]))^2
   }    
-  
+ 
+  if (trans=="log"){
+    pred$variable <- exp(dfPredictNew[,predictor]*sd(dfLog[,predictor])+mean(dfLog[,predictor]))
+  }       
   
 
   

@@ -319,9 +319,9 @@ dev.off()
 ##### Part 2: regression results
 
 ## Fig 2: barplots of  stability model
-a2 <- funCombinePlot(modStabilityCountry,5,c("Diversity","sqrt(Irigation)","Temperature instability","Precipitation instability"),"National",myColors[1],5,1,"Standardized regression coefficient",0.2,0.3)
+a2 <- funCombinePlot(modStabilityCountry,6,c("Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability"),"National",myColors[1],5,1,"Standardized regression coefficient",0.2,0.3)
 b2 <- funCombinePlot(modStabilityRegion,3,c("Diversity","sqrt(Fertilizer)"),"Regional",myColors[2],5,1,"",0.2,0.3)
-c2 <- funCombinePlot(modStabilityFarm,5,c("Diversity","sqrt(Fertilizer)","Temperature instability","Precipitation instability"),"Farm",myColors[3],5,1,"",0.2,0.3)
+c2 <- funCombinePlot(modStabilityFarm,7,c("Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time"),"Farm",myColors[3],5,1,"",0.2,0.3)
 
 # plot
 jpeg("results/Fig2.jpeg", width = 16.9, height = 8, units = 'cm', res = 600)
@@ -333,7 +333,7 @@ dev.off()
 ## Fig 4: barplots of  ratio small scale
 a4 <- funCombinePlot(modRatioSmallCountry,6,c("Diversity","sqrt(Fertilizer)","Temperature instability","Precipitation instability","Time"),"National",myColors[1],0.2,0.1,"Standardized regression coefficient",0.007,0.008)
 b4 <- funCombinePlot(modRatioSmallRegion,4,c("Diversity","sqrt(Fertilizer)","Time"),"Regional",myColors[2],0.2,0.1,"",0.007,0.008)
-c4 <- funCombinePlot(modRatioSmallFarm,5,c("Diversity","sqrt(Fertilizer)","Temperature instability","Precipitation instability"),"Farm",myColors[3],0.2,0.1,"",0.007,0.008)
+c4 <- funCombinePlot(modRatioSmallFarm,6,c("Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Precipitation instability","Time"),"Farm",myColors[3],0.2,0.1,"",0.007,0.008)
 
 # plot
 jpeg("results/Fig4.jpeg", width = 16.9, height = 8, units = 'cm', res = 600)
@@ -355,10 +355,108 @@ dev.off()
 
 
 
+
+
+
+
+####### supplementary figures
+# national level
+
+a1s <- funFig1(dfCountry[which(dfCountry$timePeriod==1968),],variable="stability",st_as_sf(mapCountry),"Country",seq(0,51,length.out = 11),c("#FFFFE5","#78C679","#004529"),"Stability","",T)
+b1s <- funFig1(dfCountry[which(dfCountry$timePeriod==1968),],variable="ratioS",st_as_sf(mapCountry),"Country",seq(0,2,length.out = 11),c("#40004B","#F7F7F7","#00441B"),"Ratio","",T)
+c1s <- funFig1(dfCountry[which(dfCountry$timePeriod==1968),],variable="ratioL",st_as_sf(mapCountry),"Country",seq(0.75,1.25,length.out = 11),c("#40004B","#F7F7F7","#00441B"),"Ratio","",T)
+
+d1s <- funFig1(dfCountry[which(dfCountry$timePeriod==1978),],variable="stability",st_as_sf(mapCountry),"Country",seq(0,51,length.out = 11),c("#FFFFE5","#78C679","#004529"),"Stability","",T)
+e1s <- funFig1(dfCountry[which(dfCountry$timePeriod==1978),],variable="ratioS",st_as_sf(mapCountry),"Country",seq(0,2,length.out = 11),c("#40004B","#F7F7F7","#00441B"),"Ratio","",T)
+f1s <- funFig1(dfCountry[which(dfCountry$timePeriod==1978),],variable="ratioL",st_as_sf(mapCountry),"Country",seq(0.75,1.25,length.out = 11),c("#40004B","#F7F7F7","#00441B"),"Ratio","",T)
+
+g1s <- funFig1(dfCountry[which(dfCountry$timePeriod==1988),],variable="stability",st_as_sf(mapCountry),"Country",seq(0,51,length.out = 11),c("#FFFFE5","#78C679","#004529"),"Stability","",T)
+h1s <- funFig1(dfCountry[which(dfCountry$timePeriod==1988),],variable="ratioS",st_as_sf(mapCountry),"Country",seq(0,2,length.out = 11),c("#40004B","#F7F7F7","#00441B"),"Ratio","",T)
+i1s <- funFig1(dfCountry[which(dfCountry$timePeriod==1988),],variable="ratioL",st_as_sf(mapCountry),"Country",seq(0.75,1.25,length.out = 11),c("#40004B","#F7F7F7","#00441B"),"Ratio","",T)
+
+j1s <- funFig1(dfCountry[which(dfCountry$timePeriod==1998),],variable="stability",st_as_sf(mapCountry),"Country",seq(0,51,length.out = 11),c("#FFFFE5","#78C679","#004529"),"Stability","",T)
+k1s <- funFig1(dfCountry[which(dfCountry$timePeriod==1998),],variable="ratioS",st_as_sf(mapCountry),"Country",seq(0,2,length.out = 11),c("#40004B","#F7F7F7","#00441B"),"Ratio","",T)
+l1s <- funFig1(dfCountry[which(dfCountry$timePeriod==1998),],variable="ratioL",st_as_sf(mapCountry),"Country",seq(0.75,1.25,length.out = 11),c("#40004B","#F7F7F7","#00441B"),"Ratio","",T)
+
+m1s <- funFig1(dfCountry[which(dfCountry$timePeriod==2008),],variable="stability",st_as_sf(mapCountry),"Country",seq(0,51,length.out = 11),c("#FFFFE5","#78C679","#004529"),"Stability","",T)
+n1s <- funFig1(dfCountry[which(dfCountry$timePeriod==2008),],variable="ratioS",st_as_sf(mapCountry),"Country",seq(0,2,length.out = 11),c("#40004B","#F7F7F7","#00441B"),"Ratio","",T)
+o1s <- funFig1(dfCountry[which(dfCountry$timePeriod==2008),],variable="ratioL",st_as_sf(mapCountry),"Country",seq(0.75,1.25,length.out = 11),c("#40004B","#F7F7F7","#00441B"),"Ratio","",T)
+
+jpeg("results/FigS1.jpeg", width = 30,height = 20, units = 'cm',res = 600)
+
+ggarrange(a1s,b1s,c1s,d1s,e1s,f1s,g1s,h1s,i1s,j1s,k1s,l1s,m1s,n1s,o1s,
+          labels = letters[1:15],font.label=list(size=8),
+          ncol = 3, nrow = 5)
+
+dev.off()
+
+
+
+
 ### To add:
 # maps for all time steps (one figure for each level of organization)
+
+
+
+
 # response curves (one figure for each level of organizatin)
+
+
+df <- data.frame()
+ggplot(data.frame()) + geom_point() + xlim(0, 10) + ylim(0, 100)
+
+empty <- ggplot() + theme_void()
+
+dfPredictCountry <- data.frame(diversity=rep(0,1000),irrigation=0,fertilizer=0,instabilityTemp=0,instabilityPrec=0,timePeriod=0,areaHarvested=0)
+dfPredictRegion <- data.frame(diversity=rep(0,1000),irrigation=0,fertilizer=0,instabilityTemp=0,instabilityPrec=0,timePeriod=0,areHarvested=0)
+dfPredictFarm <- data.frame(diversity=rep(0,1000),irrigation=0,fertilizer=0,instabilityTemp=0,instabilityPrec=0,timePeriod=0,areaHarvested=0)
+
+a4s <- funPredRange(predictor="diversity",      dfPredict=dfPredictCountry,dfCenter=dfCenterCountry,dfLog=dfTransCountry,dfOriginal=dfCountry,modS=modStabilityCountry,trans="",xlabel="Diversity",ylabel=expression(paste("Yield stability (",mu,"/",sigma,")")),0,70,"gray30")
+b4s <- funPredRange(predictor="fertilizer",     dfPredict=dfPredictCountry,dfCenter=dfCenterCountry,dfLog=dfTransCountry,dfOriginal=dfCountry,modS=modStabilityCountry,trans="sqrt",xlabel="Fertilizer (t/ha)",ylabel="",0,70,"gray30")
+c4s <- funPredRange(predictor="irrigation",     dfPredict=dfPredictCountry,dfCenter=dfCenterCountry,dfLog=dfTransCountry,dfOriginal=dfCountry,modS=modStabilityCountry,trans="sqrt",xlabel="Irrigation (%)",ylabel="",0,70,"gray30")
+d4s <- funPredRange(predictor="instabilityTemp",dfPredict=dfPredictCountry,dfCenter=dfCenterCountry,dfLog=dfTransCountry,dfOriginal=dfCountry,modS=modStabilityCountry,trans="",xlabel=expression(paste("Temperature instability (-(",mu,"/",sigma,"))")),ylabel="",0,70,"gray30")
+e4s <- funPredRange(predictor="instabilityPrec",dfPredict=dfPredictCountry,dfCenter=dfCenterCountry,dfLog=dfTransCountry,dfOriginal=dfCountry,modS=modStabilityCountry,trans="",xlabel=expression(paste("Precipitation instability (-(",mu,"/",sigma,"))")),ylabel="",0,70,"gray30")
+
+f4s <- funPredRange(predictor="diversity",      dfPredict=dfPredictCountry,dfCenter=dfCenterCountry,dfLog=dfTransCountry,dfOriginal=dfCountry,modS=modRatioSmallCountry,trans="",xlabel="Diversity",ylabel=expression(paste("Yield ratio (",mu,"/",sigma,")")),0,2,"gray30")
+g4s <- funPredRange(predictor="fertilizer",     dfPredict=dfPredictCountry,dfCenter=dfCenterCountry,dfLog=dfTransCountry,dfOriginal=dfCountry,modS=modRatioSmallCountry,trans="sqrt",xlabel="Fertilizer (t/ha)",ylabel="",0,2,"gray30")
+h4s <- funPredRange(predictor="instabilityTemp",dfPredict=dfPredictCountry,dfCenter=dfCenterCountry,dfLog=dfTransCountry,dfOriginal=dfCountry,modS=modRatioSmallCountry,trans="",xlabel=expression(paste("Temperature instability (-(",mu,"/",sigma,"))")),ylabel="",0,2,"gray30")
+i4s <- funPredRange(predictor="instabilityPrec",dfPredict=dfPredictCountry,dfCenter=dfCenterCountry,dfLog=dfTransCountry,dfOriginal=dfCountry,modS=modRatioSmallCountry,trans="",xlabel=expression(paste("Precipitation instability (-(",mu,"/",sigma,"))")),ylabel="",0,2,"gray30")
+
+j4s <- funPredRange(predictor="diversity",      dfPredict=dfPredictCountry,dfCenter=dfCenterCountry,dfLog=dfTransCountry,dfOriginal=dfCountry,modS=modRatioLargeCountry,trans="",xlabel="Diversity",ylabel=expression(paste("Yield ratio (",mu,"/",sigma,")")),0.9,1.1,"gray30")
+k4s <- funPredRange(predictor="areaHarvested",     dfPredict=dfPredictCountry,dfCenter=dfCenterCountry,dfLog=dfTransCountry,dfOriginal=dfCountry,modS=modRatioLargeCountry,trans="log",xlabel="Area harvested (Mio ha.)",ylabel="",0.9,1.1,"gray30")
+l4s <- funPredRange(predictor="instabilityTemp",dfPredict=dfPredictCountry,dfCenter=dfCenterCountry,dfLog=dfTransCountry,dfOriginal=dfCountry,modS=modRatioLargeCountry,trans="",xlabel=expression(paste("Temperature instability (-(",mu,"/",sigma,"))")),ylabel="",0.9,1.1,"gray30")
+
+jpeg("results/FigS4.jpeg", width = 30,height = 0.6*30, units = 'cm',res = 600)
+
+ggarrange(a4s,b4s,c4s,d4s,e4s,
+          f4s,g4s,h4s,i4s,empty,
+          j4s,k4s,l4s,empty,empty,
+          labels = c(letters[1:9],"",letters[10:12],"",""),font.label=list(size=8),
+          ncol = 5, nrow = 3)
+
+dev.off()
+
+
 # regression tabes (includig transformations)
+
+TableS1a <- funTables(modStabilityCountry,modStabilityRegion,modStabilityFarm,2, c("(Intercept)","Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability"),
+                      c("(Intercept)","Diversity","sqrt(Fertilizer)"),
+                      c("(Intercept)","Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time"))
+
+TableS1a <- TableS1a[c(1,3,6:8,4,9,2,5),]
+write.csv(TableS1a,"results/TableS1.csv")
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -437,7 +535,12 @@ dev.off()
 # 
 # 
 # ######## Tables
-# TableS1a <- funTables(modStabilityCountryRaw,modStabilityRegionRaw,modStabilityFarmRaw,2, c("(Intercept)","Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time"))
+# TableS1a <- funTables(modStabilityCountry,modStabilityRegion,modStabilityFarm,2, c("(Intercept)","Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability"),
+#                                                                                  c("(Intercept)","Diversity","sqrt(Fertilizer)"),
+#                                                                                  c("(Intercept)","Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time"))
+# 
+# TableS1a <- TableS1a[c(1,3,6:8,4,9,2,5),]
+
 # TableS1b <- funTablesScales(modStabilityCountryScaleRaw,modStabilityRegionScaleRaw,modStabilityFarmScaleRaw,2, c("(Intercept)","Area harvested","Time"))
 # TableS1 <- rbind(TableS1a,TableS1b)
 # write.csv(TableS1,"results/TableS1.csv")
