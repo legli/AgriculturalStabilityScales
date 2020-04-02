@@ -46,6 +46,11 @@ dfCountry <- dfCountryFull[-which(dfCountryFull$stability%in%boxplot.stats(dfCou
 nrow(dfCountry)
 length(unique(dfCountry$Country))
 
+dfCountry[order(dfCountry$ratioL,decreasing = T),c("Country","timePeriod","ratioL")]
+dfDifferentce <- merge(dfCountry[which(dfCountry$timePeriod==1968),c("Country","stability")],dfCountry[which(dfCountry$timePeriod==2008),c("Country","stability")],by="Country")
+dfDifferentce$ratio <- dfDifferentce$stability.y/dfDifferentce$stability.x
+dfDifferentce[order(dfDifferentce$ratio),]
+
 ###### Regional level
 dfRegionFull <- read.csv("datasetsDerived/dataFinal_europe.csv")
 dfRegionFull <- merge(dfRegionFull,dfCountry[,c("Country","timePeriod","fertilizer","irrigation")],by=c("Country","timePeriod"))
@@ -444,7 +449,22 @@ TableS1a <- funTables(modStabilityCountry,modStabilityRegion,modStabilityFarm,2,
                       c("(Intercept)","Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Temperature instability","Precipitation instability","Time"))
 
 TableS1a <- TableS1a[c(1,3,6:8,4,9,2,5),]
-write.csv(TableS1a,"results/TableS1.csv")
+
+TableS1b <- funTables(modRatioSmallCountry,modRatioSmallRegion,modRatioSmallFarm,2, 
+                      c("(Intercept)","Diversity","sqrt(Fertilizer)","Temperature instability","Precipitation instability","Time"),
+                      c("(Intercept)","Diversity","sqrt(Fertilizer)","Time"),
+                      c("(Intercept)","Diversity","sqrt(Fertilizer)","sqrt(Irigation)","Precipitation instability","Time"))
+
+TableS1b <- TableS1b[c(1,3,6:8,4,9,2,5),]
+
+TableS1c <- funTables(modRatioLargeCountry,modRatioLargeRegion,modRatioLargeFarm,2, 
+                      c("(Intercept)","Diversity","log(Area harvested)","Temperature instability"),
+                      c("(Intercept)","sqrt(Fertilizer)"),
+                      c("(Intercept)"))
+
+TableS1c <- TableS1c[c(1,3,6:8,4,9,2,5),]
+
+write.csv(rbind(TableS1a,TableS1b,TableS1c),"results/TableS1.csv")
 
 
 

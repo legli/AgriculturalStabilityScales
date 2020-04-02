@@ -1,10 +1,11 @@
 ## import libraries
 # library(haven)
-# library(vegan)
+library(vegan)
 library(tidyr)
 library(dplyr)
 library(ggplot2)
 library(ggpubr)
+
 # library(rgeos)
 # library(rgdal)
 
@@ -100,45 +101,187 @@ dfActual <- na.omit(dfActual)
 sort(as.character(unique(dfActual$cropTestbetrieb)))
 
 # target crops from judith
-vecCrop <- c("Zuckerrüben","Winterweizen, Dinkel","Kartoffeln","Sojabohnen","Äpfel","Sommergerste","Hartweizen, Durum",
-             "Winterraps","Sommerraps und Rübsen","Roggen","Sonnenblumen","Hafer","CCM","Energiemais","Körnermais",
-             "Erdbeeren","Energieölsaaten","Ackerbohnen","Süßkirschen","Pflaumen und Zwetschgen","Sauerkirschen, Schattenmorellen")  
-dfActual <- dfActual[which(dfActual$cropTestbetrieb%in%vecCrop),]
-length(unique(dfActual$cropTestbetrieb))==length(vecCrop)
+# vecCrop <- c("Zuckerrüben","Winterweizen, Dinkel","Kartoffeln","Sojabohnen","Äpfel","Sommergerste","Hartweizen, Durum",
+             # # "Winterraps","Sommerraps und Rübsen","Roggen","Sonnenblumen","Hafer","CCM","Energiemais","Körnermais",
+             # "Erdbeeren","Energieölsaaten","Ackerbohnen","Süßkirschen","Pflaumen und Zwetschgen","Sauerkirschen, Schattenmorellen")  
 
+# vecCrop <- c("Zuckerrüben","Winterweizen, Dinkel","Kartoffeln","Sommergerste","Hartweizen, Durum",
+             # "Winterraps","Roggen","Hafer","CCM","Körnermais")  
+
+
+# dfActual <- dfActual[which(dfActual$cropTestbetrieb%in%vecCrop),]
+# length(unique(dfActual$cropTestbetrieb))==length(vecCrop)
+
+table(dfActual$Methode)
 dfActual$Anbaumethode <- "konventionell"
-dfActual[which(dfActual$Methode==2),"Anbaumethode"] <- "uebergang"
 dfActual[which(dfActual$Methode==3),"Anbaumethode"] <- "oekologisch"
 
 
 ### check year availability
-
 table(dfActual[which(dfActual$Bundesland==14),c("Jahr","Anbaumethode")])
 table(dfActual[which(dfActual$districtName=="Leipzig"),c("Jahr","Anbaumethode")])
 
+### remove 0 yield and area
+sum(is.na(dfActual))
+sum(is.na(dfActual$Ertrag))
+sum(dfActual$Ertrag==0)
+sum(dfActual$Flaeche==0)
+dfActual <- dfActual[which(dfActual$Ertrag>0),]
+dfActual <- dfActual[which(dfActual$Flaeche>0),]
+
+## erträge Deutschland
+# production in calories
+dfGermany <- dfActual
+dfGermany$productionCal <- dfGermany$Ertrag*dfGermany$Flaeche*dfGermany$Calories
+
+vecYear <- unique(dfGermany$Jahr)
+lsYear <- lapply(vecYear,function(y){
+  dfYear <- dfGermany[which(dfGermany$Jahr==y),]
+  vecCrop <- unique(dfYear$cropTestbetrieb)
+  lsYield <- lapply(vecCrop,function(c){
+    c <- as.character(c)
+    dfCropK <- dfYear[which(dfYear$cropTestbetrieb==c&dfYear$Anbaumethode=="konventionell"),]
+    dfCropO <- dfYear[which(dfYear$cropTestbetrieb==c&dfYear$Anbaumethode=="oekologisch"),]
+    
+    data.frame(Jahr=c(y,y),Kultur=c(c,c),Anbaumethode=c("konventionell","oekologisch"),
+               nBetriebe=c(length(unique(dfCropK$key)),length(unique(dfCropO$key))),
+               Mittelwert=c(mean(dfCropK$Ertrag),mean(dfCropO$Ertrag)),
+               sd = c(sd(dfCropK$Ertrag),sd(dfCropO$Ertrag)),
+               se = c(sd(dfCropK$Ertrag)/nrow(dfCropK),sd(dfCropO$Ertrag)/nrow(dfCropO)),
+               Minimum=c(min(dfCropK$Ertrag),min(dfCropO$Ertrag)),
+               Maximum=c(max(dfCropK$Ertrag),max(dfCropO$Ertrag)),
+               sumCalories=c(sum(dfCropK$productionCal),sum(dfCropO$productionCal)),
+               sumFlaeche=c(sum(dfCropK$Flaeche),sum(dfCropO$Flaeche)))
+  })
+  dfYield <- do.call(rbind,lsYield)
+  dfYield
+})
+dfYieldGermanyAll <- do.call(rbind,lsYear)
+head(dfYieldGermanyAll)
+
+dfYieldGermanyAll[which(is.infinite(dfYieldGermanyAll$Minimum)),"Minimum"] <- NA
+dfYieldGermanyAll[which(is.infinite(dfYieldGermanyAll$Maximum)),"Maximum"] <- NA
+write.csv(dfYieldGermanyAll,"C:/Users/egli/Nextcloud/Cloud/Maasterarbeiten_Selbstversorgung/Testbetriebsnetz/ErtrageJahrGermany.csv",row.names = F)
+
+
+
 ## saxony
-dfSaxonyAll <-dfActual[which(dfActual$Anbaumethode%in%c("konventionell","oekologisch")),]
+dfSaxonyAll <-dfActual[which(dfActual$Anbaumethode%in%c("konventionell","oekologisch")&dfActual$Bundesland==14),]
 vecYear <- unique(dfSaxonyAll$Jahr)
 names(dfSaxonyAll)
+
+# production in calories
+dfSaxonyAll$productionCal <- dfSaxonyAll$Ertrag*dfSaxonyAll$Flaeche*dfSaxonyAll$Calories
 
 lsYear <- lapply(vecYear,function(y){
   dfYear <- dfSaxonyAll[which(dfSaxonyAll$Jahr==y),]
   vecCrop <- unique(dfYear$cropTestbetrieb)
   lsYield <- lapply(vecCrop,function(c){
+    c <- as.character(c)
     dfCropK <- dfYear[which(dfYear$cropTestbetrieb==c&dfYear$Anbaumethode=="konventionell"),]
     dfCropO <- dfYear[which(dfYear$cropTestbetrieb==c&dfYear$Anbaumethode=="oekologisch"),]
     
-    data.frame(Jahr=y,Kultur=c,nBetriebeK=length(unique(dfCropK$key)),MittelwertK=mean(dfCropK$Ertrag),MaximumK=max(dfCropK$Ertrag),
-               nBetriebeO=length(unique(dfCropO$key)),MittelwertO=mean(dfCropO$Ertrag),MaximumO=max(dfCropO$Ertrag))
-  })
+    data.frame(Jahr=c(y,y),Kultur=c(c,c),Anbaumethode=c("konventionell","oekologisch"),
+               nBetriebe=c(length(unique(dfCropK$key)),length(unique(dfCropO$key))),
+               Mittelwert=c(mean(dfCropK$Ertrag),mean(dfCropO$Ertrag)),
+               sd = c(sd(dfCropK$Ertrag),sd(dfCropO$Ertrag)),
+               se = c(sd(dfCropK$Ertrag)/nrow(dfCropK),sd(dfCropO$Ertrag)/nrow(dfCropO)),
+               Minimum=c(min(dfCropK$Ertrag),min(dfCropO$Ertrag)),
+               Maximum=c(max(dfCropK$Ertrag),max(dfCropO$Ertrag)),
+               sumCalories=c(sum(dfCropK$productionCal),sum(dfCropO$productionCal)),
+               sumFlaeche=c(sum(dfCropK$Flaeche),sum(dfCropO$Flaeche)))
+    })
   dfYieldSaxony <- do.call(rbind,lsYield)
   dfYieldSaxony
 })
 dfYieldSaxonyAll <- do.call(rbind,lsYear)
 head(dfYieldSaxonyAll)
 
-dfYieldSaxonyAll[which(is.infinite(dfYieldSaxonyAll$MaximumO)),"MaximumO"] <- NA
-write.csv(dfYieldSaxonyAll,"C:/Users/egli/Nextcloud/Cloud/Maasterarbeiten_Selbstversorgung/Testbetriebsnetz/ErtrageJahr.csv",row.names = F)
+dfYieldSaxonyAll[which(is.infinite(dfYieldSaxonyAll$Minimum)),"Minimum"] <- NA
+dfYieldSaxonyAll[which(is.infinite(dfYieldSaxonyAll$Maximum)),"Maximum"] <- NA
+write.csv(dfYieldSaxonyAll,"C:/Users/egli/Nextcloud/Cloud/Maasterarbeiten_Selbstversorgung/Testbetriebsnetz/ErtrageJahrSachsen.csv",row.names = F)
+
+
+
+
+
+### diversität pro betrieb und Jahr
+names(dfSaxonyAll)
+sum(is.na(dfSaxonyAll$Flaeche))
+dfSaxonyDiversity <- aggregate(Flaeche~key+Jahr+Anbaumethode,dfSaxonyAll,diversity)
+head(dfSaxonyDiversity)
+# mittel pro jahr
+dfSaxonyDiversityMean <- dfSaxonyDiversity %>%
+  group_by(Anbaumethode,Jahr) %>%
+  summarise(n = n(),
+            mean = mean(Flaeche),
+            median = median(Flaeche),
+            sd = sd(Flaeche),
+            min=min(Flaeche),
+            max=max(Flaeche)) 
+
+dfSaxonyDiversityMean <- as.data.frame(dfSaxonyDiversityMean)
+names(dfSaxonyDiversityMean)
+write.csv(dfSaxonyDiversityMean,"C:/Users/egli/Nextcloud/Cloud/Maasterarbeiten_Selbstversorgung/Testbetriebsnetz/ShannonJahrSachsen.csv",row.names = F)
+
+
+
+### gesamtertrag pro betrieb und Jahr
+names(dfSaxonyAll)
+sum(is.na(dfSaxonyAll$Flaeche))
+sum(is.na(dfSaxonyAll$productionCal))
+dfSaxonyYieldTotal <- aggregate(cbind(productionCal,Flaeche)~key+Jahr+Anbaumethode,dfSaxonyAll,sum)
+head(dfSaxonyYieldTotal)
+dfSaxonyYieldTotal$ErtragCal <- dfSaxonyYieldTotal$productionCal/dfSaxonyYieldTotal$Flaeche
+
+# only 2012-2018
+dfSaxonyYieldTotal <- dfSaxonyYieldTotal[which(dfSaxonyYieldTotal$Jahr>=2012&dfSaxonyYieldTotal$Jahr<=2018),]
+# cv per farm
+sum(is.na(dfSaxonyYieldTotal$ErtragCal))
+dfSaxonyYieldTotal <- na.omit(dfSaxonyYieldTotal)
+dfSaxonyCVTOtal <- aggregate(ErtragCal~key+Anbaumethode,dfSaxonyYieldTotal,function(i){sd(i)/mean(i)})
+head(dfSaxonyCVTOtal)  
+dfSaxonyCVTOtal <- na.omit(dfSaxonyCVTOtal)
+
+# mittel pro anbaumethode
+dfSaxonyCVFinal <- dfSaxonyCVTOtal %>%
+  group_by(Anbaumethode) %>%
+  summarise(n = n(),
+            mean = mean(ErtragCal),
+            median = median(ErtragCal),
+            sd = sd(ErtragCal),
+            min=min(ErtragCal),
+            max=max(ErtragCal)) 
+
+dfSaxonyCVFinal <- as.data.frame(dfSaxonyCVFinal)
+write.csv(dfSaxonyCVFinal,"C:/Users/egli/Nextcloud/Cloud/Maasterarbeiten_Selbstversorgung/Testbetriebsnetz/meanCVSachsen_2012_2018.csv",row.names = F)
+
+### stability pro betrieb und Jahr
+
+# only 2012-2018
+dfSaxonyYieldCrop <- dfSaxonyAll[which(dfSaxonyAll$Jahr>=2012&dfSaxonyAll$Jahr<=2018),]
+# cv per farm
+sum(is.na(dfSaxonyYieldCrop$Ertrag))
+dfSaxonyCVCrop <- aggregate(Ertrag~key+Anbaumethode+cropTestbetrieb,dfSaxonyYieldCrop,function(i){sd(i)/mean(i)})
+head(dfSaxonyCVCrop)  
+dfSaxonyCVCrop <- na.omit(dfSaxonyCVCrop)
+
+# mittel pro anbaumethode
+dfSaxonyCVCropFinal <- dfSaxonyCVCrop %>%
+  group_by(Anbaumethode,cropTestbetrieb) %>%
+  summarise(n = n(),
+            mean = mean(Ertrag),
+            median = median(Ertrag),
+            sd = sd(Ertrag),
+            min=min(Ertrag),
+            max=max(Ertrag)) 
+
+dfSaxonyCVCropFinal <- as.data.frame(dfSaxonyCVCropFinal)
+write.csv(dfSaxonyCVCropFinal,"C:/Users/egli/Nextcloud/Cloud/Maasterarbeiten_Selbstversorgung/Testbetriebsnetz/cropsCVSachsen_2012_2018.csv",row.names = F)
+
+
+
+
 
 
 ## bio Sachsen  only consider focal time frame (2012-2018)
