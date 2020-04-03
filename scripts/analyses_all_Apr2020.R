@@ -48,6 +48,7 @@ length(unique(dfCountry[which(dfCountry$timePeriod==1978),"Country"]))
 length(unique(dfCountry[which(dfCountry$timePeriod==1988),"Country"]))
 length(unique(dfCountry[which(dfCountry$timePeriod==1998),"Country"]))
 length(unique(dfCountry[which(dfCountry$timePeriod==2008),"Country"]))
+sum(table(dfCountry$Country)>1)/length(unique(dfCountry$Country))
 
 
 # harvested area to Mio ha
@@ -66,6 +67,7 @@ length(unique(dfRegion[which(dfRegion$timePeriod==1978),"Region"]))
 length(unique(dfRegion[which(dfRegion$timePeriod==1988),"Region"]))
 length(unique(dfRegion[which(dfRegion$timePeriod==1998),"Region"]))
 length(unique(dfRegion[which(dfRegion$timePeriod==2008),"Region"]))
+sum(table(dfRegion$Region)>1)/length(unique(dfRegion$Region))
 
 ###### Farm level
 dfFarm <- read.csv("P:/dataFinal_farmlevel.csv")
@@ -78,6 +80,7 @@ nrow(dfFarm)
 length(unique(dfFarm$Farm))
 length(unique(dfFarm[which(dfFarm$timePeriod==1998),"Farm"]))
 length(unique(dfFarm[which(dfFarm$timePeriod==2008),"Farm"]))
+sum(table(dfFarm$Farm)>1)/length(unique(dfFarm$Farm))
 
 
 ############################################################################################
@@ -413,26 +416,27 @@ dev.off()
 
 
 ## Fig 7: summary barplots 
+
 dfStability <- data.frame(mean=c(mean(dfCountry$stability),mean(dfRegion$stability),mean(dfFarm$stability)),
                           sd=c(sd(dfCountry$stability),sd(dfRegion$stability),sd(dfFarm$stability)),
                           level=c("National","Regional","Farm"))
 dfStability$level <- factor(dfStability$level,levels=c("National","Regional","Farm"))
+dfStability$lwr <- dfStability$mean-dfStability$sd
+dfStability[which(dfStability$lwr<0),"lwr"] <- 0
 
-dfRelativeStability <- data.frame(mean=c(mean(dfCountry$ratioS),mean(dfRegion$ratioS),mean(dfFarm$ratioS)),
-                          sd=c(sd(dfCountry$ratioS),sd(dfRegion$ratioS),sd(dfFarm$ratioS)),
+
+dfRelativeStability <- data.frame(mean=c(mean(dfCountry$stabilityOverall),mean(dfRegion$stabilityOverall),mean(dfFarm$stabilityOverall)),
+                          sd=c(sd(dfCountry$stabilityOverall),sd(dfRegion$stabilityOverall),sd(dfFarm$stabilityOverall)),
                           level=c("National","Regional","Farm"))
 dfRelativeStability$level <- factor(dfRelativeStability$level,levels=c("National","Regional","Farm"))
 
-dfStabilityContribution <- data.frame(mean=c(mean(dfCountry$ratioL),mean(dfRegion$ratioL),mean(dfFarm$ratioL)),
-                          sd=c(sd(dfCountry$ratioL),sd(dfRegion$ratioL),sd(dfFarm$ratioL)),
-                          level=c("National","Regional","Farm"))
-dfStabilityContribution$level <- factor(dfStabilityContribution$level,levels=c("National","Regional","Farm"))
 
-fig7a <- ggplot(data=dfStability, aes(x=level, y=mean)) +
+a7 <- ggplot(data=dfStability, aes(x=level, y=mean)) +
   geom_bar(stat="identity", position=position_dodge(), fill=myColors)+
-  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd), width=.1,
+  geom_errorbar(aes(ymin=lwr, ymax=mean+sd), width=.1,
                 position=position_dodge(.9)) +
   theme_classic() +  
+  ylim(c(0,65))+
   xlab("") +
   ylab("Stability") +
   theme(axis.title.y=element_text(size=8)) +
@@ -444,13 +448,14 @@ fig7a <- ggplot(data=dfStability, aes(x=level, y=mean)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1,size=6))
 
 
-fig7b <- ggplot(data=dfRelativeStability, aes(x=level, y=mean)) +
+b7 <- ggplot(data=dfRelativeStability, aes(x=level, y=mean)) +
   geom_bar(stat="identity", position=position_dodge(), fill=myColors)+
   geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd), width=.1,
                 position=position_dodge(.9)) +
   theme_classic() +  
+  ylim(c(0,65))+
   xlab("") +
-  ylab("Relative stability") +
+  ylab("Larger-scale stability") +
   theme(axis.title.y=element_text(size=8)) +
   theme(axis.text.y = element_text(size=8))+
   geom_hline(yintercept=0,size=0)+
@@ -458,6 +463,31 @@ fig7b <- ggplot(data=dfRelativeStability, aes(x=level, y=mean)) +
   theme(legend.position = "none")+
   theme(plot.title = element_text(size=8))+
   theme(axis.text.x = element_text(angle = 45, hjust = 1,size=6))
+
+jpeg("results/Fig7.jpeg", width = 8, height = 8, units = 'cm', res = 600)
+ggarrange(a7,b7,
+          labels = letters[1:2],font.label=list(size=8),
+          ncol = 2, nrow = 1,align='h')
+dev.off()
+
+# table contribution
+dfCountryC <- dfCountry[order(dfCountry$ratioL,decreasing = T),c("Country","timePeriod","ratioL")]
+dfCountryC <- dfCountryC[c(1:10,(nrow(dfCountryC)-10):(nrow(dfCountryC))),]
+mean(dfCountry$ratioL)
+sd(dfCountry$ratioL)
+
+dfRegionC <- dfRegion[order(dfRegion$ratioL,decreasing = T),c("Region","timePeriod","ratioL")]
+dfRegionC <- dfRegionC[c(1:10,(nrow(dfRegionC)-10):(nrow(dfRegionC))),]
+mean(dfRegion$ratioL)
+sd(dfRegion$ratioL)
+
+dfTable2 <- cbind(dfCountryC,dfRegionC)
+names(dfTable2) <- c("Country","Time","Yield stability contribution","Region","Time","Yield stability contribution")
+dfTable2[,c(2,3,5,6)] <- round(dfTable2[,c(2,3,5,6)],2)
+write.csv(dfTable2,"results/Table2.csv",row.names = F)
+
+dfCountry[order(dfCountry$ratioS),c("Country","timePeriod","ratioS")][1:5,]
+
 
 fig7c <- ggplot(data=dfStabilityContribution, aes(x=level, y=mean)) +
   geom_boxplot(stat="identity", position=position_dodge(), fill=myColors)+
