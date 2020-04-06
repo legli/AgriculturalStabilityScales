@@ -143,7 +143,7 @@ funPredRange <- function(predictor,dfPredict,dfCenter,dfLog,dfOriginal,modS,tran
     geom_line(data = pred, aes(y = fit),size=0.5,color=col)+
     geom_ribbon(data = pred, aes(y = fit, ymin = lwr, ymax = upr),fill=col,alpha = 0.5,colour=NA) +
     theme_classic() +
-    theme(axis.title=element_text(size=6),axis.text=element_text(size=6)) +
+    theme(axis.title=element_text(size=8),axis.text=element_text(size=6)) +
     xlab(xlabel)+
     ylab(ylabel)+
     ylim(yVal1,yVal2)+

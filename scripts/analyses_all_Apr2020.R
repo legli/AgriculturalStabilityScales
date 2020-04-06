@@ -613,7 +613,7 @@ l4s <- funPredRange(predictor="fertilizer",      dfPredict=dfPredictCountry,dfCe
 m4s <- funPredRange(predictor="areaHarvested",     dfPredict=dfPredictCountry,dfCenter=dfCenterCountry,dfLog=dfTransCountry,dfOriginal=dfCountry,modS=modRatioLargeCountry,transResponse = "",trans="log",xlabel="Area harvested (Mio ha.)",ylabel="",0.9,1.1,"gray30")
 n4s <- funPredRange(predictor="instabilityTemp",dfPredict=dfPredictCountry,dfCenter=dfCenterCountry,dfLog=dfTransCountry,dfOriginal=dfCountry,modS=modRatioLargeCountry,transResponse = "",trans="",xlabel=expression(paste("Temperature instability (-(",mu,"/",sigma,"))")),ylabel="",0.9,1.1,"gray30")
 
-jpeg("results/FigS4.jpeg", width = 30*(5/7),height = (3/5)*30*(5/7), units = 'cm',res = 600)
+jpeg("results/FigS4.jpeg", width = 30*(5/5),height = (3/5)*30*(5/5), units = 'cm',res = 600)
 
   ggarrange(a4s,b4s,c4s,d4s,e4s,
           f4s,g4s,h4s,i4s,j4s,
@@ -637,7 +637,7 @@ g5s <- funPredRange(predictor="timePeriod",dfPredict=dfPredictRegion,dfCenter=df
 
 h5s <- funPredRange(predictor="fertilizer",      dfPredict=dfPredictRegion,dfCenter=dfCenterRegion,dfLog=dfTransRegion,dfOriginal=dfRegion,modS=modRatioLargeRegion,transResponse = "",trans="log",xlabel="Fertilizer (t/ha)",ylabel="Yield stability contribution",0.9,1.1,"gray30")
 
-jpeg("results/FigS5.jpeg", width = 30*(4/7),height = (3/4)*30*(4/7), units = 'cm',res = 600)
+jpeg("results/FigS5.jpeg", width = 30*(4/5),height = (3/4)*30*(4/5), units = 'cm',res = 600)
   ggarrange(a5s,b5s,c5s,empty,
             d5s,e5s,f5s,g5s,
             h5s,
@@ -650,7 +650,7 @@ a6s <- funPredRange(predictor="diversity",      dfPredict=dfPredictFarm,dfCenter
 b6s <- funPredRange(predictor="fertilizer",     dfPredict=dfPredictFarm,dfCenter=dfCenterFarm,dfLog=dfTransFarm,dfOriginal=dfFarm,modS=modStabilityFarm,transResponse = "log",trans="sqrt",xlabel="Fertilizer (t/ha)",ylabel="",0,25,"gray30")
 c6s <- funPredRange(predictor="irrigation",     dfPredict=dfPredictFarm,dfCenter=dfCenterFarm,dfLog=dfTransFarm,dfOriginal=dfFarm,modS=modStabilityFarm,transResponse = "log",trans="sqrt",xlabel="Irrigation (%)",ylabel="",0,25,"gray30")
 d6s <- funPredRange(predictor="areaHarvested",     dfPredict=dfPredictFarm,dfCenter=dfCenterFarm,dfLog=dfTransFarm,dfOriginal=dfFarm,modS=modStabilityFarm,transResponse = "log",trans="log",xlabel="Area harvested (ha)",ylabel="",0,25,"gray30")
-e6s <- funPredRange(predictor="instabilityTemp",dfPredict=dfPredictFarm,dfCenter=dfCenterFarm,dfLog=dfTransFarm,dfOriginal=dfFarm,modS=modStabilityFarm,transResponse = "log",trans="",xlabel=expression(paste("Temperature instability (-(",mu,"/",sigma,"))")),ylabel="",0,25,"gray30")
+e6s <- funPredRange(predictor="instabilityTemp",dfPredict=dfPredictFarm,dfCenter=dfCenterFarm,dfLog=dfTransFarm,dfOriginal=dfFarm,modS=modStabilityFarm,transResponse = "log",trans="",xlabel=expression(paste("Temperature instability (-(",mu,"/",sigma,"))")),ylabel=expression(paste("Yield stability (",mu,"/",sigma,")")),0,25,"gray30")
 f6s <- funPredRange(predictor="instabilityPrec",dfPredict=dfPredictFarm,dfCenter=dfCenterFarm,dfLog=dfTransFarm,dfOriginal=dfFarm,modS=modStabilityFarm,transResponse = "log",trans="",xlabel=expression(paste("Precipitation instability (-(",mu,"/",sigma,"))")),ylabel="",0,25,"gray30")
 g6s <- funPredRange(predictor="timePeriod",dfPredict=dfPredictFarm,dfCenter=dfCenterFarm,dfLog=dfTransFarm,dfOriginal=dfFarm,modS=modStabilityFarm,transResponse = "log",trans="",xlabel="Time",ylabel="",0,25,"gray30")
 
@@ -659,15 +659,15 @@ h6s <- funPredRange(predictor="diversity",      dfPredict=dfPredictFarm,dfCenter
 i6s <- funPredRange(predictor="fertilizer",     dfPredict=dfPredictFarm,dfCenter=dfCenterFarm,dfLog=dfTransFarm,dfOriginal=dfFarm,modS=modRatioSmallFarm,transResponse = "log",trans="sqrt",xlabel="Fertilizer (t/ha)",ylabel="",0,2,"gray30")
 j6s <- funPredRange(predictor="irrigation",     dfPredict=dfPredictFarm,dfCenter=dfCenterFarm,dfLog=dfTransFarm,dfOriginal=dfFarm,modS=modRatioSmallFarm,transResponse = "log",trans="sqrt",xlabel="Irrigation (%)",ylabel="",0,2,"gray30")
 k6s <- funPredRange(predictor="instabilityTemp",dfPredict=dfPredictFarm,dfCenter=dfCenterFarm,dfLog=dfTransFarm,dfOriginal=dfFarm,modS=modRatioSmallFarm,transResponse = "log",trans="",xlabel=expression(paste("Temperature instability (-(",mu,"/",sigma,"))")),ylabel="",0,2,"gray30")
-l6s <- funPredRange(predictor="instabilityPrec",dfPredict=dfPredictFarm,dfCenter=dfCenterFarm,dfLog=dfTransFarm,dfOriginal=dfFarm,modS=modRatioSmallFarm,transResponse = "log",trans="",xlabel=expression(paste("Precipitation instability (-(",mu,"/",sigma,"))")),ylabel="",0,2,"gray30")
+l6s <- funPredRange(predictor="instabilityPrec",dfPredict=dfPredictFarm,dfCenter=dfCenterFarm,dfLog=dfTransFarm,dfOriginal=dfFarm,modS=modRatioSmallFarm,transResponse = "log",trans="",xlabel=expression(paste("Precipitation instability (-(",mu,"/",sigma,"))")),ylabel=expression(paste("Relative yield stability")),0,2,"gray30")
 m6s <- funPredRange(predictor="timePeriod",dfPredict=dfPredictFarm,dfCenter=dfCenterFarm,dfLog=dfTransFarm,dfOriginal=dfFarm,modS=modRatioSmallFarm,transResponse = "log",trans="",xlabel="Time",ylabel="",0,2,"gray30")
 
-jpeg("results/FigS6.jpeg", width = 30,height = (2/7)*30, units = 'cm',res = 600)
-  ggarrange(a6s,b6s,c6s,d6s,e6s,f6s,g6s,
+jpeg("results/FigS6.jpeg", width = 30*(4/5),height = (4/5)*30, units = 'cm',res = 600)
+  ggarrange(a6s,b6s,c6s,d6s,e6s,f6s,g6s,empty,
           h6s,i6s,j6s,k6s,l6s,m6s,
-          # labels = c(letters[1:14],"",letters[10:12],"",""),font.label=list(size=8),
-          labels = letters[1:13],font.label=list(size=8),
-          ncol = 7, nrow = 2)
+          labels = c(letters[1:7],"",letters[8:13],"",""),font.label=list(size=8),
+          # labels = letters[1:13],font.label=list(size=8),
+          ncol = 4, nrow = 4)
 dev.off()
 
 
