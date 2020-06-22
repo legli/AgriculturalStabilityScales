@@ -30,7 +30,7 @@ names(myColorsModel) <- factor(c("Stability","Yield"),levels=c("Stability","Yiel
 vecColMap <- brewer.pal(9,"PuOr")
 vecColMap[5] <- "gray75"
 
-source("scripts/functionsAnalyses_Jun2020.R")
+source("scripts/functionsAnalyses_June2020.R")
 
 
 ############################################################################################
